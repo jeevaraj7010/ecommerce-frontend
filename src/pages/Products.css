@@ -1,0 +1,79 @@
+/* Custom Fashion Styles */
+
+.shop-container {
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.underline {
+  width: 50px;
+  height: 3px;
+  background-color: #000;
+  margin-top: 10px;
+}
+
+.product-card {
+  border: none;
+  background: transparent;
+  transition: transform 0.3s ease;
+}
+
+/* Image Styling */
+.image-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px; /* Soft rounded corners */
+  aspect-ratio: 3 / 4; /* Perfect for clothing */
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+/* Hover Effect */
+.product-card:hover img {
+  transform: scale(1.08);
+}
+
+.hover-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.product-card:hover .hover-overlay {
+  opacity: 1;
+}
+
+/* Typography */
+.ls-1 {
+  letter-spacing: 1px;
+}
+
+.product-title {
+  font-weight: 500;
+  font-size: 1.05rem;
+  color: #222;
+}
+.card:hover {
+  transform: scale(1.03);
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+h6 {
+  font-size: 14px;
+}
+.product-price {
+  font-size: 1.1rem;
+}
