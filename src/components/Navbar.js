@@ -31,7 +31,12 @@ function Navbar() {
 
           {token ? (
             <>
-              {/* Profile Button */}
+              {/* 👤 Username */}
+              <span className="text-white fw-semibold">
+                Hi, {username}
+              </span>
+
+              {/* Profile */}
               <button
                 className="btn btn-outline-light btn-sm"
                 onClick={() => navigate("/profile")}
@@ -44,7 +49,7 @@ function Navbar() {
                 className="btn btn-outline-light btn-sm"
                 onClick={() => navigate("/orders")}
               >
-                 My Orders
+                My Orders
               </button>
 
               {/* Logout */}
