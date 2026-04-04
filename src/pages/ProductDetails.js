@@ -11,7 +11,7 @@ function ProductDetails() {
 
   useEffect(() => {
     axios
-      .get(`http://localhost:8081/api/products/${id}`)
+      .get(`https://ecommerce-backend-1-tsra.onrender.com/api/products/${id}`)
       .then((res) => {
         setProduct(res.data);
       })

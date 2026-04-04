@@ -16,7 +16,7 @@ function Orders() {
     }
 
     axios
-      .get("http://localhost:8081/api/orders", {
+      .get("https://ecommerce-backend-1-tsra.onrender.com/api/orders", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

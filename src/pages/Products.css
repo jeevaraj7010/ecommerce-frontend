@@ -77,3 +77,11 @@ h6 {
 .product-price {
   font-size: 1.1rem;
 }
+.product-card {
+  transition: 0.3s;
+  border-radius: 12px;
+}
+
+.product-card:hover {
+  transform: translateY(-6px);
+}

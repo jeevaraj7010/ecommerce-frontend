@@ -25,7 +25,7 @@ function Checkout() {
     }
 
     axios
-      .get("http://localhost:8081/auth/me", {
+      .get("https://ecommerce-backend-1-tsra.onrender.com/auth/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,9 +58,8 @@ function Checkout() {
     }
 
     try {
-      // Save/update address before payment
       await axios.put(
-        "http://localhost:8081/auth/update-address",
+        "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
         {
           phone: form.phone,
           address: form.address,
@@ -82,7 +81,7 @@ function Checkout() {
           try {
             for (let item of cartItems) {
               await axios.post(
-                `http://localhost:8081/api/orders/${item.id}/${item.quantity}`,
+                `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
                 {},
                 {
                   headers: {
@@ -129,35 +128,11 @@ function Checkout() {
       <div className="card p-4 shadow">
         <h2 className="text-center mb-4">Checkout</h2>
 
-        <input
-          type="text"
-          name="name"
-          className="form-control mb-3"
-          placeholder="Full Name"
-          value={form.name}
-          onChange={handleChange}
-          readOnly
-        />
+        <input type="text" name="name" className="form-control mb-3" value={form.name} readOnly />
+        <input type="text" name="phone" className="form-control mb-3" value={form.phone} onChange={handleChange} />
+        <textarea name="address" className="form-control mb-3" rows="4" value={form.address} onChange={handleChange} />
 
-        <input
-          type="text"
-          name="phone"
-          className="form-control mb-3"
-          placeholder="Phone Number"
-          value={form.phone}
-          onChange={handleChange}
-        />
-
-        <textarea
-          name="address"
-          className="form-control mb-3"
-          placeholder="Delivery Address"
-          rows="4"
-          value={form.address}
-          onChange={handleChange}
-        />
-
-        <h5 className="mb-3">Total: ₹{getTotal()}</h5>
+        <h5>Total: ₹{getTotal()}</h5>
 
         <button className="btn btn-success w-100" onClick={handlePayment}>
           Pay Now

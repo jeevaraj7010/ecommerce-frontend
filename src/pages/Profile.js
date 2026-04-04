@@ -23,7 +23,7 @@ function Profile() {
     }
 
     axios
-      .get("http://localhost:8081/auth/me", {
+      .get("https://ecommerce-backend-1-tsra.onrender.com/auth/me", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

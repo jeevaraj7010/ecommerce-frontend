@@ -12,8 +12,8 @@ function Products() {
   useEffect(() => {
     const url =
       category === "ALL"
-        ? "http://localhost:8081/api/products"
-        : `http://localhost:8081/api/products/category/${category}`;
+        ? "https://ecommerce-backend-1-tsra.onrender.com/api/products"
+        : `https://ecommerce-backend-1-tsra.onrender.com/api/products/category/${category}`;
 
     axios
       .get(url)
@@ -57,6 +57,32 @@ function Products() {
               <div className="mt-2">
                 <h6 className="mb-1">{p.name}</h6>
                 <p className="fw-bold mb-1">₹{p.price}</p>
+
+                <div className="col-6 col-md-3 col-lg-2" key={p.id}>
+                  <div className="card border-0 shadow-sm p-2 h-100 product-card">
+
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="img-fluid rounded"
+                      style={{ height: "180px", objectFit: "cover" }}
+                    />
+
+                    <div className="mt-2">
+                      <h6 className="fw-semibold">{p.name}</h6>
+
+                      <p className="text-success fw-bold">₹{p.price}</p>
+
+                      <button
+                        className="btn btn-dark btn-sm w-100"
+                        onClick={() => addToCart(p)}
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
 
                 <button
                   className="btn btn-sm btn-success w-100"

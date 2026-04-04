@@ -29,9 +29,12 @@ function Register() {
     try {
       setLoadingOtp(true);
 
-      const response = await axios.post("http://localhost:8081/auth/send-otp", {
-        phone: formData.phone,
-      });
+      const response = await axios.post(
+        "https://ecommerce-backend-1-tsra.onrender.com/auth/send-otp",
+        {
+          phone: formData.phone,
+        }
+      );
 
       alert(response.data);
       setOtpSent(true);
@@ -50,7 +53,7 @@ function Register() {
       setLoadingRegister(true);
 
       const response = await axios.post(
-        "http://localhost:8081/auth/register",
+        "https://ecommerce-backend-1-tsra.onrender.com/auth/register",
         formData
       );
 

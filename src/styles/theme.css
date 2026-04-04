@@ -1,0 +1,11 @@
+:root {
+  --primary: #0f172a;
+  --accent: #22c55e;
+  --bg: #f8fafc;
+  --card: #ffffff;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg);
+}

@@ -24,7 +24,7 @@ function AddProduct() {
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
-        "http://localhost:8081/api/products",
+        "https://ecommerce-backend-1-tsra.onrender.com/api/products",
         product,
         {
           headers: {
@@ -36,7 +36,6 @@ function AddProduct() {
       alert("Product Added Successfully");
       console.log(response.data);
 
-      // Clear form
       setProduct({
         name: "",
         description: "",
@@ -56,43 +55,10 @@ function AddProduct() {
         <h3 className="text-center mb-3">Add Product</h3>
 
         <form onSubmit={handleSubmit}>
-          <input
-            className="form-control mb-3"
-            name="name"
-            placeholder="Product Name"
-            value={product.name}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="form-control mb-3"
-            name="description"
-            placeholder="Description"
-            value={product.description}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="form-control mb-3"
-            type="number"
-            name="price"
-            placeholder="Price"
-            value={product.price}
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            className="form-control mb-3"
-            type="number"
-            name="quantity"
-            placeholder="Quantity"
-            value={product.quantity}
-            onChange={handleChange}
-            required
-          />
+          <input className="form-control mb-3" name="name" placeholder="Product Name" value={product.name} onChange={handleChange} required />
+          <input className="form-control mb-3" name="description" placeholder="Description" value={product.description} onChange={handleChange} required />
+          <input className="form-control mb-3" type="number" name="price" placeholder="Price" value={product.price} onChange={handleChange} required />
+          <input className="form-control mb-3" type="number" name="quantity" placeholder="Quantity" value={product.quantity} onChange={handleChange} required />
 
           <button type="submit" className="btn btn-dark w-100">
             Add Product
@@ -103,4 +69,4 @@ function AddProduct() {
   );
 }
 
-export default AddProduct;
+export default AddProduct;  
