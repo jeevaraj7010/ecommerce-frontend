@@ -20,9 +20,16 @@ function ForgotPassword() {
       );
 
       alert(res.data);
+
     } catch (err) {
       console.error(err);
-      alert(err.response?.data || "Error sending email");
+
+      if (err.message === "Network Error") {
+        alert("Server waking up... try again in few seconds");
+      } else {
+        alert(err.response?.data || "Error sending email");
+      }
+
     } finally {
       setLoading(false);
     }
@@ -48,9 +55,10 @@ function ForgotPassword() {
         <button className="btn btn-dark w-100" onClick={handleSend}>
           {loading ? "Sending..." : "Send Reset Link"}
         </button>
+
       </div>
     </div>
   );
 }
 
-export default ForgotPassword;  
+export default ForgotPassword;

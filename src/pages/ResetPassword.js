@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 function ResetPassword() {
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -11,8 +12,18 @@ function ResetPassword() {
   const token = query.get("token");
 
   const handleReset = async () => {
-    if (!password) {
-      alert("Enter new password");
+    if (!token) {
+      alert("Invalid reset link");
+      return;
+    }
+
+    if (!password || !confirm) {
+      alert("Fill all fields");
+      return;
+    }
+
+    if (password !== confirm) {
+      alert("Passwords do not match");
       return;
     }
 
@@ -21,17 +32,21 @@ function ResetPassword() {
 
       const res = await axios.post(
         "https://ecommerce-backend-1-tsra.onrender.com/auth/reset-password",
-        {
-          token,
-          password,
-        }
+        { token, password }
       );
 
       alert(res.data);
       navigate("/login");
+
     } catch (err) {
       console.error(err);
-      alert(err.response?.data || "Reset failed");
+
+      if (err.message === "Network Error") {
+        alert("Server waking up... try again in few seconds");
+      } else {
+        alert(err.response?.data || "Reset failed");
+      }
+
     } finally {
       setLoading(false);
     }
@@ -48,15 +63,24 @@ function ResetPassword() {
 
         <input
           type="password"
-          className="form-control mb-3"
-          placeholder="Enter new password"
+          className="form-control mb-2"
+          placeholder="New password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <input
+          type="password"
+          className="form-control mb-3"
+          placeholder="Confirm password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
         />
 
         <button className="btn btn-success w-100" onClick={handleReset}>
           {loading ? "Updating..." : "Reset Password"}
         </button>
+
       </div>
     </div>
   );

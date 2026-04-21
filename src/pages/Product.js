@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; // ✅ ADD THIS
 import { CartContext } from "./CartContext";
 import "./Products.css";
 
@@ -8,6 +9,7 @@ function Products() {
   const [category, setCategory] = useState("ALL");
 
   const { addToCart } = useContext(CartContext);
+  const navigate = useNavigate(); // ✅ ADD THIS
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,7 +69,13 @@ function Products() {
       <div className="row g-4">
         {products.map((p) => (
           <div className="col-6 col-md-4 col-lg-3" key={p.id}>
-            <div className="card border-0 shadow-sm p-2 h-100 product-card">
+
+            {/* 🔥 MAKE CARD CLICKABLE */}
+            <div
+              className="card border-0 shadow-sm p-2 h-100 product-card"
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate(`/product/${p.id}`)}
+            >
 
               {/* Image */}
               <img
@@ -80,7 +88,6 @@ function Products() {
               {/* Content */}
               <div className="mt-2 text-center">
 
-                {/* Name */}
                 <h6 className="fw-semibold">{p.name}</h6>
 
                 {/* ⭐ Rating */}
@@ -100,13 +107,13 @@ function Products() {
                   </span>
                 </div>
 
-                {/* Price */}
                 <p className="text-success fw-bold mb-2">₹{p.price}</p>
 
-                {/* Button */}
+                {/* 🔥 PREVENT REDIRECT */}
                 <button
                   className="btn btn-dark btn-sm w-100"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation(); // ✅ VERY IMPORTANT
                     addToCart(p);
                     alert(`${p.name} added to cart`);
                   }}
@@ -116,6 +123,7 @@ function Products() {
 
               </div>
             </div>
+
           </div>
         ))}
       </div>
