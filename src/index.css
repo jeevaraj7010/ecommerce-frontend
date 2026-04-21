@@ -1,0 +1,27 @@
+/* 🌍 Global UI */
+body {
+  margin: 0;
+  background: #f1f5f9;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Cards */
+.card {
+  border-radius: 18px !important;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+/* Buttons */
+button {
+  border-radius: 10px !important;
+}
+
+/* Product */
+.product-card {
+  cursor: pointer;
+}

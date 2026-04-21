@@ -15,10 +15,11 @@ function Checkout() {
 
   const [loading, setLoading] = useState(true);
 
+  // 🔥 Load user data
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if(!token) {
+    if (!token) {
       alert("Please login first");
       navigate("/login", { state: { from: "/checkout" } });
       return;
@@ -37,27 +38,26 @@ function Checkout() {
           address: res.data.address || "",
         });
       })
-      .catch((err) => {
-        console.error(err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
   }, [navigate]);
 
+  // 🔥 Handle form change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // 🔥 Handle payment
   const handlePayment = async () => {
     const token = localStorage.getItem("token");
 
-    if (!form.name || !form.phone || !form.address) {
+    if (!form.phone || !form.address) {
       alert("Please fill all address details");
       return;
     }
 
     try {
+      // Save address
       await axios.put(
         "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
         {
@@ -71,12 +71,14 @@ function Checkout() {
         }
       );
 
+      // Razorpay config
       const options = {
-        key:"rzp_test_SYFtpVxC2rCFbs",
+        key: "rzp_test_SYFtpVxC2rCFbs",
         amount: getTotal() * 100,
         currency: "INR",
-        name: "MyStore",
+        name: "Hoodify",
         description: "Order Payment",
+
         handler: async function () {
           try {
             for (let item of cartItems) {
@@ -91,21 +93,23 @@ function Checkout() {
               );
             }
 
-            alert("Payment successful and order placed");
+            alert("Payment successful 🎉");
             clearCart();
             navigate("/orders");
           } catch (error) {
-            console.error(error);
-            alert(error.response?.data || "Order failed after payment");
+            alert(error.response?.data || "Order failed");
           }
         },
+
         prefill: {
           name: form.name,
           contact: form.phone,
         },
+
         notes: {
           address: form.address,
         },
+
         theme: {
           color: "#198754",
         },
@@ -113,30 +117,72 @@ function Checkout() {
 
       const rzp = new window.Razorpay(options);
       rzp.open();
+
     } catch (error) {
-      console.error(error);
       alert(error.response?.data || "Failed to save address");
     }
   };
 
+  // 🔥 Loading UI
   if (loading) {
-    return <h3 className="text-center mt-5">Loading checkout...</h3>;
+    return (
+      <div className="text-center mt-5">
+        <h4>Loading checkout...</h4>
+      </div>
+    );
   }
 
   return (
-    <div className="container mt-5" style={{ maxWidth: "600px" }}>
-      <div className="card p-4 shadow">
-        <h2 className="text-center mb-4">Checkout</h2>
+    <div
+      className="d-flex justify-content-center align-items-center"
+      style={{ minHeight: "90vh", background: "#f1f5f9" }}
+    >
+      <div
+        className="card shadow-lg p-4"
+        style={{ width: "100%", maxWidth: "450px", borderRadius: "20px" }}
+      >
+        <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
-        <input type="text" name="name" className="form-control mb-3" value={form.name} readOnly />
-        <input type="text" name="phone" className="form-control mb-3" value={form.phone} onChange={handleChange} />
-        <textarea name="address" className="form-control mb-3" rows="4" value={form.address} onChange={handleChange} />
+        {/* Name */}
+        <input
+          className="form-control mb-3"
+          value={form.name}
+          readOnly
+        />
 
-        <h5>Total: ₹{getTotal()}</h5>
+        {/* Phone */}
+        <input
+          name="phone"
+          className="form-control mb-3"
+          value={form.phone}
+          onChange={handleChange}
+          placeholder="Enter phone"
+        />
 
-        <button className="btn btn-success w-100" onClick={handlePayment}>
+        {/* Address */}
+        <textarea
+          name="address"
+          className="form-control mb-3"
+          rows="3"
+          value={form.address}
+          onChange={handleChange}
+          placeholder="Enter address"
+        />
+
+        {/* Total */}
+        <h5 className="mb-3 text-center">
+          Total: ₹{getTotal()}
+        </h5>
+
+        {/* Button */}
+        <button
+          className="btn btn-success w-100 py-2"
+          onClick={handlePayment}
+          disabled={cartItems.length === 0}
+        >
           Pay Now
         </button>
+
       </div>
     </div>
   );

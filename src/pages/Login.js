@@ -11,16 +11,10 @@ function Login() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const redirectTo = location.state?.from || "/home";
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,19 +22,18 @@ function Login() {
     try {
       setLoading(true);
 
-      const response = await axios.post(
+      const res = await axios.post(
         "https://ecommerce-backend-1-tsra.onrender.com/auth/login",
         formData
       );
 
-      const token = response.data.token || response.data;
+      const token = res.data.token || res.data;
       localStorage.setItem("token", token);
       localStorage.setItem("username", formData.username);
 
-      alert("Login successful");
-      navigate(redirectTo, { replace: true });
-    } catch (error) {
-      alert(error.response?.data || "Login failed");
+      navigate(redirectTo);
+    } catch {
+      alert("Login failed");
     } finally {
       setLoading(false);
     }
@@ -48,36 +41,50 @@ function Login() {
 
   return (
     <div className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0f172a, #1e293b, #334155)" }}>
+      style={{ minHeight: "100vh", background: "#f1f5f9" }}>
 
-      <div className="card border-0 shadow-lg p-4"
-        style={{ width: "100%", maxWidth: "420px", borderRadius: "20px" }}>
+      <div className="card shadow-lg p-4" style={{ width: "400px" }}>
 
-        <h2 className="text-center fw-bold mb-2">Welcome Back</h2>
+        <h3 className="text-center fw-bold mb-3">Login</h3>
 
         <form onSubmit={handleSubmit}>
 
-          <input name="username" className="form-control mb-3"
-            placeholder="Username" value={formData.username}
-            onChange={handleChange} required />
+          <input
+            className="form-control mb-3"
+            placeholder="Username"
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+          />
 
-          <input type="password" name="password" className="form-control mb-3"
-            placeholder="Password" value={formData.password}
-            onChange={handleChange} required />
+          {/* 🔥 Password with eye */}
+          <div className="position-relative mb-3">
+            <input
+              type={showPassword ? "text" : "password"}
+              className="form-control"
+              placeholder="Password"
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
 
-          <button className="btn btn-dark w-100 mb-2">
-            {loading ? "Logging in..." : "Login"}
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "8px",
+                cursor: "pointer"
+              }}
+            >
+              👁️
+            </span>
+          </div>
+
+          <button className="btn btn-dark w-100">
+            {loading ? "Logging..." : "Login"}
           </button>
 
         </form>
 
-        {/* 🔥 NEW */}
-        <p className="text-center">
-          <Link to="/forgot-password">Forgot Password?</Link>
-        </p>
-
         <p className="text-center mt-2">
-          Don’t have an account? <Link to="/register">Register</Link>
+          <Link to="/forgot-password">Forgot Password?</Link>
         </p>
 
       </div>
