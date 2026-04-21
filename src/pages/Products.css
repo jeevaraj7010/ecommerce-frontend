@@ -16,6 +16,13 @@
   background: transparent;
   transition: transform 0.3s ease;
 }
+.product-card {
+  transition: transform 0.2s ease;
+}
+
+.product-card:hover {
+  transform: scale(1.05);
+}
 
 /* Image Styling */
 .image-container {

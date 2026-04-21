@@ -10,19 +10,39 @@ function Products() {
   const { addToCart } = useContext(CartContext);
 
   useEffect(() => {
-    const url =
-      category === "ALL"
-        ? "https://ecommerce-backend-1-tsra.onrender.com/api/products"
-        : `https://ecommerce-backend-1-tsra.onrender.com/api/products/category/${category}`;
+    const fetchData = async () => {
+      try {
+        const url =
+          category === "ALL"
+            ? "https://ecommerce-backend-1-tsra.onrender.com/api/products"
+            : `https://ecommerce-backend-1-tsra.onrender.com/api/products/category/${category}`;
 
-    axios
-      .get(url)
-      .then((res) => setProducts(res.data))
-      .catch((err) => console.error(err));
+        const [productRes, ratingRes] = await Promise.all([
+          axios.get(url),
+          axios.get("https://ecommerce-backend-1-tsra.onrender.com/api/reviews/average/all"),
+        ]);
+
+        const ratingsMap = ratingRes.data;
+
+        const updatedProducts = productRes.data.map((p) => ({
+          ...p,
+          rating: ratingsMap[p.id] || 0,
+        }));
+
+        setProducts(updatedProducts);
+
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchData();
   }, [category]);
 
   return (
     <div className="container mt-4">
+
+      {/* Category Buttons */}
       <div className="d-flex justify-content-center gap-3 mb-4">
         <button className="btn btn-dark" onClick={() => setCategory("ALL")}>
           All
@@ -43,56 +63,57 @@ function Products() {
         </button>
       </div>
 
-      <div className="row g-3">
+      {/* Products Grid */}
+      <div className="row g-4">
         {products.map((p) => (
-          <div className="col-6 col-md-3 col-lg-2" key={p.id}>
-            <div className="card border-0 shadow-sm p-2 h-100">
+          <div className="col-6 col-md-4 col-lg-3" key={p.id}>
+            <div className="card border-0 shadow-sm p-2 h-100 product-card">
+
+              {/* Image */}
               <img
-                src={p.imageUrl}
+                src={p.imageUrl || "https://via.placeholder.com/150"}
                 alt={p.name}
-                className="img-fluid"
-                style={{ height: "150px", objectFit: "cover" }}
+                className="img-fluid rounded"
+                style={{ height: "180px", objectFit: "cover" }}
               />
 
-              <div className="mt-2">
-                <h6 className="mb-1">{p.name}</h6>
-                <p className="fw-bold mb-1">₹{p.price}</p>
+              {/* Content */}
+              <div className="mt-2 text-center">
 
-                <div className="col-6 col-md-3 col-lg-2" key={p.id}>
-                  <div className="card border-0 shadow-sm p-2 h-100 product-card">
+                {/* Name */}
+                <h6 className="fw-semibold">{p.name}</h6>
 
-                    <img
-                      src={p.imageUrl}
-                      alt={p.name}
-                      className="img-fluid rounded"
-                      style={{ height: "180px", objectFit: "cover" }}
-                    />
-
-                    <div className="mt-2">
-                      <h6 className="fw-semibold">{p.name}</h6>
-
-                      <p className="text-success fw-bold">₹{p.price}</p>
-
-                      <button
-                        className="btn btn-dark btn-sm w-100"
-                        onClick={() => addToCart(p)}
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-
-                  </div>
+                {/* ⭐ Rating */}
+                <div style={{ fontSize: "14px" }}>
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        color: i < Math.round(p.rating) ? "gold" : "#ccc"
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                  <span style={{ marginLeft: "5px", color: "#555" }}>
+                    ({p.rating.toFixed(1)})
+                  </span>
                 </div>
 
+                {/* Price */}
+                <p className="text-success fw-bold mb-2">₹{p.price}</p>
+
+                {/* Button */}
                 <button
-                  className="btn btn-sm btn-success w-100"
+                  className="btn btn-dark btn-sm w-100"
                   onClick={() => {
                     addToCart(p);
                     alert(`${p.name} added to cart`);
                   }}
                 >
-                  Add
+                  Add to Cart
                 </button>
+
               </div>
             </div>
           </div>
