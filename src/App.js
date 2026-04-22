@@ -11,7 +11,7 @@ import Orders from "./pages/Orders";
 import AddProduct from "./pages/AddProduct";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
+import OtpReset from "./pages/OtpReset"; // 🔥 ADD THIS
 
 // ✅ Admin imports
 import AdminLayout from "./admin/AdminLayout";
@@ -27,13 +27,15 @@ function App() {
 
         {/* public pages */}
         <Route path="/" element={<Home />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/products" element={<Products />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
+
+        {/* 🔥 OTP FLOW */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
-<Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/otp-reset" element={<OtpReset />} />
 
         {/* auth pages */}
         <Route path="/login" element={<Login />} />
@@ -46,7 +48,7 @@ function App() {
         {/* admin old */}
         <Route path="/add-product" element={<AddProduct />} />
 
-        {/* 🔥 NEW ADMIN DASHBOARD */}
+        {/* 🔥 ADMIN DASHBOARD */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="orders" element={<AdminOrders />} />

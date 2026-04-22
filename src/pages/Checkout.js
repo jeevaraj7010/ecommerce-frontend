@@ -38,7 +38,10 @@ function Checkout() {
           address: res.data.address || "",
         });
       })
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err);
+        alert("Failed to load user ❌");
+      })
       .finally(() => setLoading(false));
   }, [navigate]);
 
@@ -51,13 +54,30 @@ function Checkout() {
   const handlePayment = async () => {
     const token = localStorage.getItem("token");
 
+    // ✅ Safety checks
+    if (!token) {
+      alert("Session expired. Login again");
+      navigate("/login");
+      return;
+    }
+
     if (!form.phone || !form.address) {
-      alert("Please fill all address details");
+      alert("Fill address details");
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      alert("Cart is empty");
+      return;
+    }
+
+    if (!window.Razorpay) {
+      alert("Payment system not loaded. Refresh page");
       return;
     }
 
     try {
-      // Save address
+      // 🔥 Save address
       await axios.put(
         "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
         {
@@ -71,7 +91,7 @@ function Checkout() {
         }
       );
 
-      // Razorpay config
+      // 🔥 Razorpay options
       const options = {
         key: "rzp_test_SYFtpVxC2rCFbs",
         amount: getTotal() * 100,
@@ -79,7 +99,9 @@ function Checkout() {
         name: "Hoodify",
         description: "Order Payment",
 
-        handler: async function () {
+        handler: async function (response) {
+          console.log("PAYMENT SUCCESS:", response);
+
           try {
             for (let item of cartItems) {
               await axios.post(
@@ -96,8 +118,10 @@ function Checkout() {
             alert("Payment successful 🎉");
             clearCart();
             navigate("/orders");
+
           } catch (error) {
-            alert(error.response?.data || "Order failed");
+            console.error(error);
+            alert(error.response?.data || "Order failed ❌");
           }
         },
 
@@ -116,10 +140,18 @@ function Checkout() {
       };
 
       const rzp = new window.Razorpay(options);
+
+      // ❌ Payment failure handler
+      rzp.on("payment.failed", function (response) {
+        console.error("PAYMENT FAILED:", response.error);
+        alert("Payment failed ❌");
+      });
+
       rzp.open();
 
     } catch (error) {
-      alert(error.response?.data || "Failed to save address");
+      console.error(error);
+      alert(error.response?.data || "Failed to save address ❌");
     }
   };
 
@@ -144,11 +176,7 @@ function Checkout() {
         <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
         {/* Name */}
-        <input
-          className="form-control mb-3"
-          value={form.name}
-          readOnly
-        />
+        <input className="form-control mb-3" value={form.name} readOnly />
 
         {/* Phone */}
         <input
@@ -170,9 +198,7 @@ function Checkout() {
         />
 
         {/* Total */}
-        <h5 className="mb-3 text-center">
-          Total: ₹{getTotal()}
-        </h5>
+        <h5 className="mb-3 text-center">Total: ₹{getTotal()}</h5>
 
         {/* Button */}
         <button
@@ -182,7 +208,6 @@ function Checkout() {
         >
           Pay Now
         </button>
-
       </div>
     </div>
   );

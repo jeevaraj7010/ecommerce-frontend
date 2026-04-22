@@ -1,18 +1,38 @@
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
 
-  // 🔐 Protect admin route
+  // 🔐 Protect admin route using backend
   useEffect(() => {
-    const role = localStorage.getItem("role");
+    const token = localStorage.getItem("token");
 
-    if (role !== "ROLE_ADMIN") {
-      alert("Access Denied");
-      navigate("/home");
+    if (!token) {
+      navigate("/login");
+      return;
     }
+
+    // 🔥 Call admin API to verify access
+    fetch("https://ecommerce-backend-1-tsra.onrender.com/api/admin/overview", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (res.status === 403 || res.status === 401) {
+          alert("Access Denied");
+          navigate("/home");
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        alert("Server error");
+        navigate("/home");
+      });
   }, [navigate]);
 
   // 🔥 Active link style
@@ -32,6 +52,15 @@ function AdminLayout() {
     localStorage.clear();
     navigate("/login");
   };
+
+  // ⏳ Loading state
+  if (loading) {
+    return (
+      <h3 style={{ textAlign: "center", marginTop: "100px" }}>
+        Checking access...
+      </h3>
+    );
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>

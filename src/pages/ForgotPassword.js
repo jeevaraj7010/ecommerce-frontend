@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function ForgotPassword() {
   const [email, setEmail] = useState("");
+  const navigate = useNavigate();
 
-  const handleSend = async () => {
-    await axios.post(
-      "https://ecommerce-backend-1-tsra.onrender.com/auth/forgot-password",
-      { email }
-    );
-    alert("Check your email 📧");
+  const handleNext = () => {
+    if (!email) {
+      alert("Enter email");
+      return;
+    }
+
+    navigate("/otp-reset", { state: { email } });
   };
 
   return (
@@ -17,19 +19,18 @@ function ForgotPassword() {
       style={{ minHeight: "100vh", background: "#f1f5f9" }}>
 
       <div className="card p-4 shadow-lg" style={{ width: "400px" }}>
-
         <h4 className="text-center mb-3">Forgot Password</h4>
 
         <input
           className="form-control mb-3"
-          placeholder="Enter email"
+          placeholder="Enter your email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <button className="btn btn-dark w-100" onClick={handleSend}>
-          Send Reset Link
+        <button className="btn btn-dark w-100" onClick={handleNext}>
+          Continue
         </button>
-
       </div>
     </div>
   );
