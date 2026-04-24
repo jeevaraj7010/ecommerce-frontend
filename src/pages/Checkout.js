@@ -46,12 +46,12 @@ function Checkout() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  // 🔥 Handle form change
+  // 🔥 Handle input change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 🔥 Handle payment
+  // 🔥 FINAL PAYMENT HANDLER (NO RAZORPAY)
   const handlePayment = async () => {
     const token = localStorage.getItem("token");
 
@@ -62,17 +62,12 @@ function Checkout() {
     }
 
     if (!form.phone || !form.address) {
-      toast.warning("Fill address details ⚠️");
+      toast.warning("Please fill address details ⚠️");
       return;
     }
 
     if (cartItems.length === 0) {
       toast.warning("Cart is empty 🛒");
-      return;
-    }
-
-    if (!window.Razorpay) {
-      toast.error("Payment system not loaded ❌");
       return;
     }
 
@@ -91,52 +86,20 @@ function Checkout() {
         }
       );
 
-      const options = {
-        key: "rzp_test_SYFtpVxC2rCFbs",
-        amount: getTotal() * 100,
-        currency: "INR",
-        name: "Hoodify",
-        description: "Order Payment",
+      // 🔥 DIRECT ORDER SUCCESS (NO PAYMENT)
+      toast.success("Order placed successfully 🎉");
 
-        // ✅ FINAL FIXED HANDLER
-        handler: async function () {
-          toast.success("Payment successful 🎉");
+      clearCart();
 
-          clearCart();
-
-          navigate("/order-success");
-        },
-
-        prefill: {
-          name: form.name,
-          contact: form.phone,
-        },
-
-        notes: {
-          address: form.address,
-        },
-
-        theme: {
-          color: "#198754",
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-
-      // ❌ DISABLE FAILURE BLOCK (optional but safe)
-      rzp.on("payment.failed", function () {
-        toast.error("Payment failed ❌ (ignored in demo)");
-      });
-
-      rzp.open();
+      navigate("/order-success");
 
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data || "Failed to save address ❌");
+      toast.error(error.response?.data || "Something went wrong ❌");
     }
   };
 
-  // 🔥 Loading UI
+  // 🔥 Loading screen
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -156,8 +119,14 @@ function Checkout() {
       >
         <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
-        <input className="form-control mb-3" value={form.name} readOnly />
+        {/* Name */}
+        <input
+          className="form-control mb-3"
+          value={form.name}
+          readOnly
+        />
 
+        {/* Phone */}
         <input
           name="phone"
           className="form-control mb-3"
@@ -166,6 +135,7 @@ function Checkout() {
           placeholder="Enter phone"
         />
 
+        {/* Address */}
         <textarea
           name="address"
           className="form-control mb-3"
@@ -175,16 +145,18 @@ function Checkout() {
           placeholder="Enter address"
         />
 
+        {/* Total */}
         <h5 className="mb-3 text-center">
           Total: ₹{getTotal()}
         </h5>
 
+        {/* Pay Button */}
         <button
           className="btn btn-success w-100 py-2"
           onClick={handlePayment}
           disabled={cartItems.length === 0}
         >
-          Pay Now
+          Place Order
         </button>
       </div>
     </div>
