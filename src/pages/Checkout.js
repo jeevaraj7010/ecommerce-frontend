@@ -51,66 +51,73 @@ function Checkout() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 🔥 FINAL PAYMENT HANDLER (NO RAZORPAY)
- const handlePayment = async () => {
-  const token = localStorage.getItem("token");
+  // 🔥 FINAL PAYMENT HANDLER
+  const handlePayment = async () => {
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    toast.error("Session expired. Login again ❌");
-    navigate("/login");
-    return;
-  }
+    if (!token) {
+      toast.error("Session expired. Login again ❌");
+      navigate("/login");
+      return;
+    }
 
-  if (!form.phone || !form.address) {
-    toast.warning("Please fill address details ⚠️");
-    return;
-  }
+    if (!form.phone || !form.address) {
+      toast.warning("Please fill address details ⚠️");
+      return;
+    }
 
-  if (cartItems.length === 0) {
-    toast.warning("Cart is empty 🛒");
-    return;
-  }
+    if (cartItems.length === 0) {
+      toast.warning("Cart is empty 🛒");
+      return;
+    }
 
-  try {
-    // 🔥 Save address
-    await axios.put(
-      "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
-      {
-        phone: form.phone,
-        address: form.address,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    try {
+      // 🔥 Save address
+      await axios.put(
+        "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
+        {
+          phone: form.phone,
+          address: form.address,
         },
-      }
-    );
-
-    // 🔥 SAVE ORDERS (IMPORTANT ADD)
-    for (let item of cartItems) {
-      await axios.post(
-        `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
-        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
+      // 🔥 Save orders
+      for (let item of cartItems) {
+        await axios.post(
+          `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+
+      toast.success("Order placed successfully 🎉");
+      clearCart();
+      navigate("/order-success");
+
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data || "Something went wrong ❌");
     }
+  };
 
-    // 🔥 SUCCESS
-    toast.success("Order placed successfully 🎉");
-
-    clearCart();
-
-    navigate("/order-success");
-
-  } catch (error) {
-    console.error(error);
-    toast.error(error.response?.data || "Something went wrong ❌");
+  // ✅ FIX: USE loading
+  if (loading) {
+    return (
+      <div className="text-center mt-5">
+        <h4>Loading checkout...</h4>
+      </div>
+    );
   }
-};
+
   return (
     <div
       className="d-flex justify-content-center align-items-center"
@@ -122,14 +129,8 @@ function Checkout() {
       >
         <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
-        {/* Name */}
-        <input
-          className="form-control mb-3"
-          value={form.name}
-          readOnly
-        />
+        <input className="form-control mb-3" value={form.name} readOnly />
 
-        {/* Phone */}
         <input
           name="phone"
           className="form-control mb-3"
@@ -138,7 +139,6 @@ function Checkout() {
           placeholder="Enter phone"
         />
 
-        {/* Address */}
         <textarea
           name="address"
           className="form-control mb-3"
@@ -148,12 +148,10 @@ function Checkout() {
           placeholder="Enter address"
         />
 
-        {/* Total */}
         <h5 className="mb-3 text-center">
           Total: ₹{getTotal()}
         </h5>
 
-        {/* Pay Button */}
         <button
           className="btn btn-success w-100 py-2"
           onClick={handlePayment}
