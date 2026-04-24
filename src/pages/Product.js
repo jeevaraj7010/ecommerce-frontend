@@ -1,26 +1,20 @@
 import { useEffect, useState, useContext } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom"; // ✅ ADD THIS
+import { useNavigate } from "react-router-dom";
 import { CartContext } from "./CartContext";
 import "./Products.css";
 
 function Products() {
   const [products, setProducts] = useState([]);
-  const [category, setCategory] = useState("ALL");
 
   const { addToCart } = useContext(CartContext);
-  const navigate = useNavigate(); // ✅ ADD THIS
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const url =
-          category === "ALL"
-            ? "https://ecommerce-backend-1-tsra.onrender.com/api/products"
-            : `https://ecommerce-backend-1-tsra.onrender.com/api/products/category/${category}`;
-
         const [productRes, ratingRes] = await Promise.all([
-          axios.get(url),
+          axios.get("https://ecommerce-backend-1-tsra.onrender.com/api/products"),
           axios.get("https://ecommerce-backend-1-tsra.onrender.com/api/reviews/average/all"),
         ]);
 
@@ -39,38 +33,16 @@ function Products() {
     };
 
     fetchData();
-  }, [category]);
+  }, []);
 
   return (
     <div className="container mt-4">
 
-      {/* Category Buttons */}
-      <div className="d-flex justify-content-center gap-3 mb-4">
-        <button className="btn btn-dark" onClick={() => setCategory("ALL")}>
-          All
-        </button>
-
-        <button
-          className="btn btn-outline-dark"
-          onClick={() => setCategory("MEN")}
-        >
-          Men
-        </button>
-
-        <button
-          className="btn btn-outline-dark"
-          onClick={() => setCategory("WOMEN")}
-        >
-          Women
-        </button>
-      </div>
-
-      {/* Products Grid */}
+      {/* 🔥 Products Grid */}
       <div className="row g-4">
         {products.map((p) => (
           <div className="col-6 col-md-4 col-lg-3" key={p.id}>
 
-            {/* 🔥 MAKE CARD CLICKABLE */}
             <div
               className="card border-0 shadow-sm p-2 h-100 product-card"
               style={{ cursor: "pointer" }}
@@ -79,7 +51,7 @@ function Products() {
 
               {/* Image */}
               <img
-                src={p.imageUrl || "https://via.placeholder.com/150"}
+                src={p.imageUrl || "https://picsum.photos/300"} // 🔥 better fallback
                 alt={p.name}
                 className="img-fluid rounded"
                 style={{ height: "180px", objectFit: "cover" }}
@@ -109,11 +81,11 @@ function Products() {
 
                 <p className="text-success fw-bold mb-2">₹{p.price}</p>
 
-                {/* 🔥 PREVENT REDIRECT */}
+                {/* Add to Cart */}
                 <button
                   className="btn btn-dark btn-sm w-100"
                   onClick={(e) => {
-                    e.stopPropagation(); // ✅ VERY IMPORTANT
+                    e.stopPropagation();
                     addToCart(p);
                     alert(`${p.name} added to cart`);
                   }}
@@ -127,6 +99,7 @@ function Products() {
           </div>
         ))}
       </div>
+
     </div>
   );
 }

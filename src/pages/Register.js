@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { toast } from "react-toastify"; // 🔥 ADD THIS
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ function Register() {
         formData
       );
 
-      alert(response.data);
+      toast.success(response.data); // 🔥 REPLACED
 
       setFormData({
         username: "",
@@ -39,7 +40,7 @@ function Register() {
       });
     } catch (error) {
       console.error(error);
-      alert(error.response?.data || "Registration failed");
+      toast.error(error.response?.data || "Registration failed ❌"); // 🔥 REPLACED
     } finally {
       setLoadingRegister(false);
     }

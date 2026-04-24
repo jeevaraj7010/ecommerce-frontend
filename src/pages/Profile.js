@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify"; // 🔥 ADD THIS
 
 function Profile() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ function Profile() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login to view profile");
+      toast.error("Please login to view profile ❌"); // 🔥 REPLACED
       navigate("/login", { replace: true, state: { from: "/profile" } });
       return;
     }
@@ -33,7 +34,7 @@ function Profile() {
       })
       .catch((err) => {
         console.error(err);
-        alert("Failed to load profile");
+        toast.error("Failed to load profile ❌"); // 🔥 REPLACED
       })
       .finally(() => {
         setLoading(false);

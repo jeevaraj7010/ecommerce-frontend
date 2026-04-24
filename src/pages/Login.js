@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 
 function Login() {
   const navigate = useNavigate();
@@ -28,12 +29,16 @@ function Login() {
       );
 
       const token = res.data.token || res.data;
+
+      // 🔥 STORE DATA
       localStorage.setItem("token", token);
       localStorage.setItem("username", formData.username);
+      localStorage.setItem("role", res.data.role); // 🔥 ADDED LINE
 
       navigate(redirectTo);
+
     } catch {
-      alert("Login failed");
+      toast.error("Login failed ❌");
     } finally {
       setLoading(false);
     }
@@ -52,16 +57,19 @@ function Login() {
           <input
             className="form-control mb-3"
             placeholder="Username"
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, username: e.target.value })
+            }
           />
 
-          {/* 🔥 Password with eye */}
           <div className="position-relative mb-3">
             <input
               type={showPassword ? "text" : "password"}
               className="form-control"
               placeholder="Password"
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
             />
 
             <span

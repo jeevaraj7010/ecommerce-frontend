@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
+import { toast } from "react-toastify"; // 🔥 ADD THIS
 
 function OtpReset() {
   const location = useLocation();
@@ -26,7 +27,7 @@ function OtpReset() {
   };
 
   const sendOtp = async () => {
-    if (!email) return alert("Enter email");
+    if (!email) return toast.warning("Enter email ⚠️"); // 🔥 REPLACED
 
     try {
       await axios.post(
@@ -34,17 +35,17 @@ function OtpReset() {
         { email }
       );
 
-      alert("OTP sent 📧");
+      toast.success("OTP sent 📧"); // 🔥 REPLACED
       startTimer();
 
     } catch (err) {
-      alert(err.response?.data || "Error ❌");
+      toast.error(err.response?.data || "Error ❌"); // 🔥 REPLACED
     }
   };
 
   const verifyOtp = async () => {
     if (!email || !otp || !password) {
-      return alert("Fill all fields");
+      return toast.warning("Fill all fields ⚠️"); // 🔥 REPLACED
     }
 
     try {
@@ -55,10 +56,10 @@ function OtpReset() {
         { email, otp, password }
       );
 
-      alert(res.data);
+      toast.success(res.data); // 🔥 REPLACED
 
     } catch (err) {
-      alert(err.response?.data || "Invalid OTP ❌");
+      toast.error(err.response?.data || "Invalid OTP ❌"); // 🔥 REPLACED
     } finally {
       setLoading(false);
     }

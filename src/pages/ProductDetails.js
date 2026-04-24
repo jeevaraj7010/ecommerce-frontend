@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CartContext } from "./CartContext";
+import { toast } from "react-toastify"; // 🔥 ADD THIS
 
 function ProductDetails() {
   const { id } = useParams();
@@ -38,7 +39,7 @@ function ProductDetails() {
       { productId: id, username, rating, comment },
       { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {
-      alert("Review added");
+      toast.success("Review added ✅"); // 🔥 REPLACED
       window.location.reload();
     });
   };
@@ -49,7 +50,7 @@ function ProductDetails() {
       `https://ecommerce-backend-1-tsra.onrender.com/api/reviews/${rid}`,
       { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {
-      alert("Deleted");
+      toast.error("Deleted ❌"); // 🔥 REPLACED
       window.location.reload();
     });
   };
@@ -61,7 +62,7 @@ function ProductDetails() {
       { rating, comment },
       { headers: { Authorization: `Bearer ${token}` } }
     ).then(() => {
-      alert("Updated");
+      toast.info("Updated ✏️"); // 🔥 REPLACED
       window.location.reload();
     });
   };
@@ -98,7 +99,7 @@ function ProductDetails() {
           className="btn btn-dark mt-3 me-2"
           onClick={() => {
             addToCart(product);
-            alert("Added to cart");
+            toast.success("Added to cart 🛒"); // 🔥 REPLACED
           }}
         >
           Add to Cart
@@ -118,7 +119,6 @@ function ProductDetails() {
       <div className="mt-4">
         <h4>Add Review</h4>
 
-        {/* ⭐ Star Select */}
         <div>
           {[1,2,3,4,5].map(star => (
             <span
@@ -161,7 +161,6 @@ function ProductDetails() {
 
               <b>{r.username}</b>
 
-              {/* ⭐ Stars */}
               <div>
                 {"★".repeat(r.rating)}
                 {"☆".repeat(5 - r.rating)}
@@ -169,7 +168,6 @@ function ProductDetails() {
 
               <p>{r.comment}</p>
 
-              {/* ✏️ Edit + Delete */}
               {r.username === username && (
                 <>
                   <button

@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import { CartContext } from "./CartContext";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 function Checkout() {
   const { cartItems, getTotal, clearCart } = useContext(CartContext);
@@ -20,7 +21,7 @@ function Checkout() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login first");
+      toast.error("Please login first ❌");
       navigate("/login", { state: { from: "/checkout" } });
       return;
     }
@@ -40,7 +41,7 @@ function Checkout() {
       })
       .catch((err) => {
         console.error(err);
-        alert("Failed to load user ❌");
+        toast.error("Failed to load user ❌");
       })
       .finally(() => setLoading(false));
   }, [navigate]);
@@ -54,25 +55,24 @@ function Checkout() {
   const handlePayment = async () => {
     const token = localStorage.getItem("token");
 
-    // ✅ Safety checks
     if (!token) {
-      alert("Session expired. Login again");
+      toast.error("Session expired. Login again ❌");
       navigate("/login");
       return;
     }
 
     if (!form.phone || !form.address) {
-      alert("Fill address details");
+      toast.warning("Fill address details ⚠️");
       return;
     }
 
     if (cartItems.length === 0) {
-      alert("Cart is empty");
+      toast.warning("Cart is empty 🛒");
       return;
     }
 
     if (!window.Razorpay) {
-      alert("Payment system not loaded. Refresh page");
+      toast.error("Payment system not loaded ❌");
       return;
     }
 
@@ -91,7 +91,6 @@ function Checkout() {
         }
       );
 
-      // 🔥 Razorpay options
       const options = {
         key: "rzp_test_SYFtpVxC2rCFbs",
         amount: getTotal() * 100,
@@ -115,13 +114,15 @@ function Checkout() {
               );
             }
 
-            alert("Payment successful 🎉");
+            toast.success("Payment successful 🎉");
             clearCart();
-            navigate("/orders");
+
+            // 🔥 REDIRECT TO ANIMATION PAGE
+            navigate("/order-success");
 
           } catch (error) {
             console.error(error);
-            alert(error.response?.data || "Order failed ❌");
+            toast.error(error.response?.data || "Order failed ❌");
           }
         },
 
@@ -141,21 +142,19 @@ function Checkout() {
 
       const rzp = new window.Razorpay(options);
 
-      // ❌ Payment failure handler
       rzp.on("payment.failed", function (response) {
         console.error("PAYMENT FAILED:", response.error);
-        alert("Payment failed ❌");
+        toast.error("Payment failed ❌");
       });
 
       rzp.open();
 
     } catch (error) {
       console.error(error);
-      alert(error.response?.data || "Failed to save address ❌");
+      toast.error(error.response?.data || "Failed to save address ❌");
     }
   };
 
-  // 🔥 Loading UI
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -175,10 +174,8 @@ function Checkout() {
       >
         <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
-        {/* Name */}
         <input className="form-control mb-3" value={form.name} readOnly />
 
-        {/* Phone */}
         <input
           name="phone"
           className="form-control mb-3"
@@ -187,7 +184,6 @@ function Checkout() {
           placeholder="Enter phone"
         />
 
-        {/* Address */}
         <textarea
           name="address"
           className="form-control mb-3"
@@ -197,10 +193,8 @@ function Checkout() {
           placeholder="Enter address"
         />
 
-        {/* Total */}
         <h5 className="mb-3 text-center">Total: ₹{getTotal()}</h5>
 
-        {/* Button */}
         <button
           className="btn btn-success w-100 py-2"
           onClick={handlePayment}

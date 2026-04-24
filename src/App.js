@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";              // 🔥 ADD
+import "react-toastify/dist/ReactToastify.css";               // 🔥 ADD
+
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -11,7 +14,9 @@ import Orders from "./pages/Orders";
 import AddProduct from "./pages/AddProduct";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
-import OtpReset from "./pages/OtpReset"; // 🔥 ADD THIS
+import OtpReset from "./pages/OtpReset";
+
+import OrderSuccess from "./pages/OrderSuccess";
 
 // ✅ Admin imports
 import AdminLayout from "./admin/AdminLayout";
@@ -23,6 +28,10 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
+
+      {/* 🔥 GLOBAL TOAST */}
+      <ToastContainer position="top-right" autoClose={2000} />
+
       <Routes>
 
         {/* public pages */}
@@ -32,6 +41,8 @@ function App() {
         <Route path="/products" element={<Products />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
+
+        <Route path="/order-success" element={<OrderSuccess />} />
 
         {/* 🔥 OTP FLOW */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -60,4 +71,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 
