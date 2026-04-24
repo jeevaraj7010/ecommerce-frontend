@@ -52,62 +52,65 @@ function Checkout() {
   };
 
   // 🔥 FINAL PAYMENT HANDLER (NO RAZORPAY)
-  const handlePayment = async () => {
-    const token = localStorage.getItem("token");
+ const handlePayment = async () => {
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      toast.error("Session expired. Login again ❌");
-      navigate("/login");
-      return;
-    }
+  if (!token) {
+    toast.error("Session expired. Login again ❌");
+    navigate("/login");
+    return;
+  }
 
-    if (!form.phone || !form.address) {
-      toast.warning("Please fill address details ⚠️");
-      return;
-    }
+  if (!form.phone || !form.address) {
+    toast.warning("Please fill address details ⚠️");
+    return;
+  }
 
-    if (cartItems.length === 0) {
-      toast.warning("Cart is empty 🛒");
-      return;
-    }
+  if (cartItems.length === 0) {
+    toast.warning("Cart is empty 🛒");
+    return;
+  }
 
-    try {
-      // 🔥 Save address
-      await axios.put(
-        "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
-        {
-          phone: form.phone,
-          address: form.address,
+  try {
+    // 🔥 Save address
+    await axios.put(
+      "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
+      {
+        phone: form.phone,
+        address: form.address,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
+      }
+    );
+
+    // 🔥 SAVE ORDERS (IMPORTANT ADD)
+    for (let item of cartItems) {
+      await axios.post(
+        `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-
-      // 🔥 DIRECT ORDER SUCCESS (NO PAYMENT)
-      toast.success("Order placed successfully 🎉");
-
-      clearCart();
-
-      navigate("/order-success");
-
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data || "Something went wrong ❌");
     }
-  };
 
-  // 🔥 Loading screen
-  if (loading) {
-    return (
-      <div className="text-center mt-5">
-        <h4>Loading checkout...</h4>
-      </div>
-    );
+    // 🔥 SUCCESS
+    toast.success("Order placed successfully 🎉");
+
+    clearCart();
+
+    navigate("/order-success");
+
+  } catch (error) {
+    console.error(error);
+    toast.error(error.response?.data || "Something went wrong ❌");
   }
-
+};
   return (
     <div
       className="d-flex justify-content-center align-items-center"
