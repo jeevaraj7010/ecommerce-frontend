@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "./CartContext";
+import { toast } from "react-toastify"; // 🔥 ADD THIS
 
 function Cart() {
   const {
@@ -17,7 +18,7 @@ function Cart() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login to continue checkout");
+      toast.warning("Please login to continue checkout ⚠️"); // 🔥 REPLACED
       navigate("/login", { state: { from: "/checkout" } });
       return;
     }
@@ -36,6 +37,7 @@ function Cart() {
           {cartItems.map((item) => (
             <div key={item.id} className="card p-3 mb-3">
               <div className="row align-items-center">
+
                 <div className="col-md-3">
                   <img
                     src={item.imageUrl}
@@ -78,6 +80,7 @@ function Cart() {
                     Remove
                   </button>
                 </div>
+
               </div>
             </div>
           ))}

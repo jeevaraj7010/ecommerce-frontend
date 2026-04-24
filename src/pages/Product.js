@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "./CartContext";
+import { toast } from "react-toastify"; // 🔥 ADD THIS
 import "./Products.css";
 
 function Products() {
@@ -38,7 +39,6 @@ function Products() {
   return (
     <div className="container mt-4">
 
-      {/* 🔥 Products Grid */}
       <div className="row g-4">
         {products.map((p) => (
           <div className="col-6 col-md-4 col-lg-3" key={p.id}>
@@ -49,20 +49,17 @@ function Products() {
               onClick={() => navigate(`/product/${p.id}`)}
             >
 
-              {/* Image */}
               <img
-                src={p.imageUrl || "https://picsum.photos/300"} // 🔥 better fallback
+                src={p.imageUrl || "https://picsum.photos/300"}
                 alt={p.name}
                 className="img-fluid rounded"
                 style={{ height: "180px", objectFit: "cover" }}
               />
 
-              {/* Content */}
               <div className="mt-2 text-center">
 
                 <h6 className="fw-semibold">{p.name}</h6>
 
-                {/* ⭐ Rating */}
                 <div style={{ fontSize: "14px" }}>
                   {Array.from({ length: 5 }, (_, i) => (
                     <span
@@ -81,13 +78,12 @@ function Products() {
 
                 <p className="text-success fw-bold mb-2">₹{p.price}</p>
 
-                {/* Add to Cart */}
                 <button
                   className="btn btn-dark btn-sm w-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     addToCart(p);
-                    alert(`${p.name} added to cart`);
+                    toast.success(`${p.name} added to cart 🛒`); // 🔥 REPLACED
                   }}
                 >
                   Add to Cart
