@@ -20,6 +20,12 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // 🔥 VALIDATION
+    if (!formData.username.trim() || !formData.password.trim()) {
+      toast.warning("Please enter username & password ⚠️");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -28,26 +34,36 @@ function Login() {
         formData
       );
 
+      // 🔥 HANDLE RESPONSE SAFELY
       const token = res.data.token || res.data;
+      const role = res.data.role || "ROLE_USER";
 
-      // 🔥 STORE DATA
       localStorage.setItem("token", token);
       localStorage.setItem("username", formData.username);
-      localStorage.setItem("role", res.data.role); // 🔥 ADDED LINE
+      localStorage.setItem("role", role);
+
+      toast.success("Login successful ✅");
 
       navigate(redirectTo);
 
-    } catch {
-      toast.error("Login failed ❌");
+    } catch (err) {
+      console.error(err);
+
+      if (err.response?.status === 401) {
+        toast.error("Invalid username or password ❌");
+      } else {
+        toast.error("Server error. Try again ❌");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "100vh", background: "#f1f5f9" }}>
-
+    <div
+      className="d-flex justify-content-center align-items-center"
+      style={{ minHeight: "100vh", background: "#f1f5f9" }}
+    >
       <div className="card shadow-lg p-4" style={{ width: "400px" }}>
 
         <h3 className="text-center fw-bold mb-3">Login</h3>
@@ -57,6 +73,7 @@ function Login() {
           <input
             className="form-control mb-3"
             placeholder="Username"
+            value={formData.username}
             onChange={(e) =>
               setFormData({ ...formData, username: e.target.value })
             }
@@ -67,6 +84,7 @@ function Login() {
               type={showPassword ? "text" : "password"}
               className="form-control"
               placeholder="Password"
+              value={formData.password}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
@@ -78,14 +96,14 @@ function Login() {
                 position: "absolute",
                 right: "10px",
                 top: "8px",
-                cursor: "pointer"
+                cursor: "pointer",
               }}
             >
               👁️
             </span>
           </div>
 
-          <button className="btn btn-dark w-100">
+          <button className="btn btn-dark w-100" disabled={loading}>
             {loading ? "Logging..." : "Login"}
           </button>
 

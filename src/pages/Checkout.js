@@ -11,7 +11,7 @@ function Checkout() {
   const [form, setForm] = useState({
     name: "",
     phone: "",
-    email: "", // 🔥 NEW
+    email: "",
     street: "",
     city: "",
     district: "",
@@ -40,7 +40,7 @@ function Checkout() {
         setForm({
           name: res.data.username || "",
           phone: res.data.phone || "",
-          email: res.data.email || "", // 🔥 AUTO-FILL
+          email: res.data.email || "",
           street: res.data.street || "",
           city: res.data.city || "",
           district: res.data.district || "",
@@ -69,15 +69,28 @@ function Checkout() {
     }
 
     // 🔥 VALIDATION
+    if (!form.phone.trim()) {
+      toast.warning("Phone is required 📱");
+      return;
+    }
+
+    if (!form.email.trim()) {
+      toast.warning("Email is required 📧");
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      toast.warning("Enter valid email ❌");
+      return;
+    }
+
     if (
-      !form.phone ||
-      !form.email ||
-      !form.street ||
-      !form.city ||
-      !form.district ||
-      !form.pincode
+      !form.street.trim() ||
+      !form.city.trim() ||
+      !form.district.trim() ||
+      !form.pincode.trim()
     ) {
-      toast.warning("Please fill all details ⚠️");
+      toast.warning("Please fill address completely 🏠");
       return;
     }
 
@@ -92,7 +105,7 @@ function Checkout() {
         "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
         {
           phone: form.phone,
-          email: form.email, // 🔥 NEW
+          email: form.email,
           street: form.street,
           city: form.city,
           district: form.district,
@@ -106,17 +119,19 @@ function Checkout() {
       );
 
       // 🔥 SAVE ORDERS
-      for (let item of cartItems) {
-        await axios.post(
-          `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-      }
+      await Promise.all(
+        cartItems.map((item) =>
+          axios.post(
+            `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
+            {},
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          )
+        )
+      );
 
       toast.success("Order placed successfully 🎉");
       clearCart();
@@ -124,11 +139,16 @@ function Checkout() {
 
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data || "Something went wrong ❌");
+
+      if (error.response?.data?.includes("Email already")) {
+        toast.error("Email already used ❌");
+      } else {
+        toast.error(error.response?.data || "Something went wrong ❌");
+      }
     }
   };
 
-  // 🔄 Loading
+  // 🔄 Loading UI
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -146,14 +166,8 @@ function Checkout() {
 
             <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
-            {/* Name */}
-            <input
-              className="form-control mb-3"
-              value={form.name}
-              readOnly
-            />
+            <input className="form-control mb-3" value={form.name} readOnly />
 
-            {/* Phone */}
             <input
               name="phone"
               className="form-control mb-3"
@@ -162,7 +176,6 @@ function Checkout() {
               placeholder="Phone Number"
             />
 
-            {/* 🔥 EMAIL */}
             <input
               name="email"
               type="email"
@@ -172,7 +185,6 @@ function Checkout() {
               placeholder="Email (Required)"
             />
 
-            {/* Street */}
             <textarea
               name="street"
               className="form-control mb-3"
@@ -182,7 +194,6 @@ function Checkout() {
               placeholder="Street / House No / Area"
             />
 
-            {/* City + District */}
             <div className="row">
               <div className="col-12 col-md-6">
                 <input
@@ -205,7 +216,6 @@ function Checkout() {
               </div>
             </div>
 
-            {/* Pincode */}
             <input
               name="pincode"
               className="form-control mb-3"
@@ -214,12 +224,10 @@ function Checkout() {
               placeholder="Pincode"
             />
 
-            {/* Total */}
             <h5 className="mb-3 text-center">
               Total: ₹{getTotal()}
             </h5>
 
-            {/* Button */}
             <button
               className="btn btn-success w-100 py-2"
               onClick={handlePayment}
