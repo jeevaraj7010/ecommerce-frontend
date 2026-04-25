@@ -1,0 +1,80 @@
+.order-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  transition: 0.3s;
+}
+
+.order-card:hover {
+  transform: translateY(-3px);
+}
+
+.menu-dots {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.menu-box {
+  position: absolute;
+  right: 0;
+  top: 25px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.menu-box p {
+  margin: 5px 0;
+  cursor: pointer;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  margin-top: 10px;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.shipped {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.delivered {
+  background: #d4edda;
+  color: #155724;
+}
+
+/* 🔥 PROGRESS BAR */
+.progress-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.step {
+  width: 30%;
+  height: 6px;
+  background: #ddd;
+  border-radius: 5px;
+}
+
+.step.active {
+  background: #28a745;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-top: 5px;
+}

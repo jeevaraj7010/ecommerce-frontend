@@ -1,107 +1,94 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // 🔥 ADD THIS
+import "./Orders.css";
 
 function Orders() {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [openMenu, setOpenMenu] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (!token) {
-      toast.error("Please login to view orders ❌"); // 🔥 REPLACED
-      navigate("/login", { state: { from: "/orders" } });
-      return;
-    }
-
     axios
       .get("https://ecommerce-backend-1-tsra.onrender.com/api/orders", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setOrders(res.data))
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load orders ❌"); // 🔥 REPLACED
-      })
-      .finally(() => setLoading(false));
-  }, [navigate]);
+      .catch(console.error);
+  }, []);
 
-  const getStatusColor = (status) => {
-    if (!status) return "secondary";
-    if (status === "DELIVERED") return "success";
-    if (status === "PENDING") return "warning";
-    if (status === "CANCELLED") return "danger";
-    return "secondary";
+  // 🔥 STATUS STEP CALCULATION
+  const getStep = (status) => {
+    if (status === "PENDING") return 1;
+    if (status === "SHIPPED") return 2;
+    if (status === "DELIVERED") return 3;
+    return 1;
   };
 
-  if (loading) {
-    return <h4 className="text-center mt-5">Loading orders...</h4>;
-  }
-
   return (
-    <div className="container mt-5">
-      <h2 className="text-center mb-4 fw-bold">My Orders 🛍️</h2>
+    <div className="container py-4">
+      <h2 className="text-center mb-4 fw-bold">My Orders 📦</h2>
 
-      {orders.length === 0 ? (
-        <div className="text-center mt-5">
-          <h5>No orders yet 😢</h5>
-          <button
-            className="btn btn-dark mt-3"
-            onClick={() => navigate("/products")}
-          >
-            Shop Now
-          </button>
-        </div>
-      ) : (
-        orders.map((order) => (
-          <div
-            key={order.id}
-            className="card p-3 mb-3 shadow-sm border-0"
-            style={{ borderRadius: "15px" }}
-          >
-            <div className="row align-items-center">
+      {orders.map((o) => {
+        const step = getStep(o.status);
 
-              <div className="col-md-6">
-                <h5 className="fw-semibold mb-1">
-                  {order.productName || "Product"}
-                </h5>
+        return (
+          <div className="order-card" key={o.id}>
 
-                <p className="text-muted mb-1">
-                  ID: {order.productId}
-                </p>
+            {/* 🔥 TOP SECTION */}
+            <div className="d-flex justify-content-between align-items-start">
 
-                <p className="mb-1">
-                  Quantity: <strong>{order.quantity}</strong>
-                </p>
+              <div>
+                <h5 className="fw-bold">{o.productName}</h5>
+                <p className="text-muted mb-1">Order ID: {o.id}</p>
+                <p>₹{o.totalPrice}</p>
               </div>
 
-              <div className="col-md-3 text-center">
-                <h5 className="text-success fw-bold">
-                  ₹{order.totalPrice}
-                </h5>
-
-                <span className={`badge bg-${getStatusColor(order.status)}`}>
-                  {order.status || "PLACED"}
+              {/* 🔥 3 DOT MENU */}
+              <div className="position-relative">
+                <span
+                  className="menu-dots"
+                  onClick={() => setOpenMenu(openMenu === o.id ? null : o.id)}
+                >
+                  ⋮
                 </span>
-              </div>
 
-              <div className="col-md-3 text-end">
-                <small className="text-muted">
-                  {order.orderDate
-                    ? new Date(order.orderDate).toLocaleString()
-                    : "N/A"}
-                </small>
+                {openMenu === o.id && (
+                  <div className="menu-box">
+                    <p>View Details</p>
+                    <p>Track Order</p>
+                    {o.status === "PENDING" && <p>Cancel Order</p>}
+                  </div>
+                )}
               </div>
-
             </div>
+
+            {/* 🔥 STATUS BADGE */}
+            <span className={`status-badge ${o.status.toLowerCase()}`}>
+              {o.status}
+            </span>
+
+            {/* 🔥 PROGRESS BAR */}
+            <div className="progress-container">
+              <div className={`step ${step >= 1 ? "active" : ""}`}></div>
+              <div className={`step ${step >= 2 ? "active" : ""}`}></div>
+              <div className={`step ${step >= 3 ? "active" : ""}`}></div>
+            </div>
+
+            <div className="progress-labels">
+              <span>Ordered</span>
+              <span>Shipped</span>
+              <span>Delivered</span>
+            </div>
+
+            {/* 🔥 TRACK BUTTON */}
+            <button className="btn btn-dark w-100 mt-3">
+              Track Order 🚚
+            </button>
+
           </div>
-        ))
-      )}
+        );
+      })}
     </div>
   );
 }
