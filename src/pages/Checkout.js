@@ -11,7 +11,11 @@ function Checkout() {
   const [form, setForm] = useState({
     name: "",
     phone: "",
-    address: "",
+    email: "", // 🔥 NEW
+    street: "",
+    city: "",
+    district: "",
+    pincode: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -36,7 +40,11 @@ function Checkout() {
         setForm({
           name: res.data.username || "",
           phone: res.data.phone || "",
-          address: res.data.address || "",
+          email: res.data.email || "", // 🔥 AUTO-FILL
+          street: res.data.street || "",
+          city: res.data.city || "",
+          district: res.data.district || "",
+          pincode: res.data.pincode || "",
         });
       })
       .catch((err) => {
@@ -46,12 +54,11 @@ function Checkout() {
       .finally(() => setLoading(false));
   }, [navigate]);
 
-  // 🔥 Handle input change
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // 🔥 FINAL PAYMENT HANDLER
+  // 🔥 FINAL ORDER HANDLER
   const handlePayment = async () => {
     const token = localStorage.getItem("token");
 
@@ -61,8 +68,16 @@ function Checkout() {
       return;
     }
 
-    if (!form.phone || !form.address) {
-      toast.warning("Please fill address details ⚠️");
+    // 🔥 VALIDATION
+    if (
+      !form.phone ||
+      !form.email ||
+      !form.street ||
+      !form.city ||
+      !form.district ||
+      !form.pincode
+    ) {
+      toast.warning("Please fill all details ⚠️");
       return;
     }
 
@@ -72,12 +87,16 @@ function Checkout() {
     }
 
     try {
-      // 🔥 Save address
+      // 🔥 SAVE EMAIL + ADDRESS
       await axios.put(
         "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
         {
           phone: form.phone,
-          address: form.address,
+          email: form.email, // 🔥 NEW
+          street: form.street,
+          city: form.city,
+          district: form.district,
+          pincode: form.pincode,
         },
         {
           headers: {
@@ -86,7 +105,7 @@ function Checkout() {
         }
       );
 
-      // 🔥 Save orders
+      // 🔥 SAVE ORDERS
       for (let item of cartItems) {
         await axios.post(
           `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
@@ -109,7 +128,7 @@ function Checkout() {
     }
   };
 
-  // ✅ FIX: USE loading
+  // 🔄 Loading
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -119,46 +138,99 @@ function Checkout() {
   }
 
   return (
-    <div
-      className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "90vh", background: "#f1f5f9" }}
-    >
-      <div
-        className="card shadow-lg p-4"
-        style={{ width: "100%", maxWidth: "450px", borderRadius: "20px" }}
-      >
-        <h3 className="text-center fw-bold mb-3">Checkout</h3>
+    <div className="container py-4">
+      <div className="row justify-content-center">
 
-        <input className="form-control mb-3" value={form.name} readOnly />
+        <div className="col-12 col-md-8 col-lg-6">
+          <div className="card shadow-lg p-4" style={{ borderRadius: "20px" }}>
 
-        <input
-          name="phone"
-          className="form-control mb-3"
-          value={form.phone}
-          onChange={handleChange}
-          placeholder="Enter phone"
-        />
+            <h3 className="text-center fw-bold mb-3">Checkout</h3>
 
-        <textarea
-          name="address"
-          className="form-control mb-3"
-          rows="3"
-          value={form.address}
-          onChange={handleChange}
-          placeholder="Enter address"
-        />
+            {/* Name */}
+            <input
+              className="form-control mb-3"
+              value={form.name}
+              readOnly
+            />
 
-        <h5 className="mb-3 text-center">
-          Total: ₹{getTotal()}
-        </h5>
+            {/* Phone */}
+            <input
+              name="phone"
+              className="form-control mb-3"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder="Phone Number"
+            />
 
-        <button
-          className="btn btn-success w-100 py-2"
-          onClick={handlePayment}
-          disabled={cartItems.length === 0}
-        >
-          Place Order
-        </button>
+            {/* 🔥 EMAIL */}
+            <input
+              name="email"
+              type="email"
+              className="form-control mb-3"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="Email (Required)"
+            />
+
+            {/* Street */}
+            <textarea
+              name="street"
+              className="form-control mb-3"
+              rows="2"
+              value={form.street}
+              onChange={handleChange}
+              placeholder="Street / House No / Area"
+            />
+
+            {/* City + District */}
+            <div className="row">
+              <div className="col-12 col-md-6">
+                <input
+                  name="city"
+                  className="form-control mb-3"
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="City"
+                />
+              </div>
+
+              <div className="col-12 col-md-6">
+                <input
+                  name="district"
+                  className="form-control mb-3"
+                  value={form.district}
+                  onChange={handleChange}
+                  placeholder="District"
+                />
+              </div>
+            </div>
+
+            {/* Pincode */}
+            <input
+              name="pincode"
+              className="form-control mb-3"
+              value={form.pincode}
+              onChange={handleChange}
+              placeholder="Pincode"
+            />
+
+            {/* Total */}
+            <h5 className="mb-3 text-center">
+              Total: ₹{getTotal()}
+            </h5>
+
+            {/* Button */}
+            <button
+              className="btn btn-success w-100 py-2"
+              onClick={handlePayment}
+              disabled={cartItems.length === 0}
+            >
+              Place Order
+            </button>
+
+          </div>
+        </div>
+
       </div>
     </div>
   );

@@ -25,3 +25,115 @@ button {
 .product-card {
   cursor: pointer;
 }
+/* ================= TRACKING UI ================= */
+
+.tracking-container {
+  position: relative;
+  padding: 20px 10px;
+}
+
+.tracking-line {
+  position: absolute;
+  top: 18px;
+  left: 10%;
+  width: 80%;
+  height: 4px;
+  background: #e5e7eb;
+  z-index: 1;
+  border-radius: 10px;
+}
+
+/* Active progress (green fill) */
+.tracking-line::after {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 0%;
+  background: #22c55e;
+  border-radius: 10px;
+  transition: 0.5s;
+}
+
+/* Steps container */
+.tracking-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+/* Each step */
+.step {
+  text-align: center;
+  width: 33%;
+}
+
+/* Circle */
+.circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #d1d5db;
+  margin: auto;
+  transition: 0.3s;
+}
+
+/* Active circle */
+.circle.active {
+  background: #22c55e;
+  transform: scale(1.2);
+}
+
+/* Step text */
+.step p {
+  font-size: 12px;
+  margin-top: 6px;
+  color: #6b7280;
+}
+
+/* Active text */
+.step.active p {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* ================= BUTTON IMPROVEMENTS ================= */
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: none;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none;
+}
+
+/* ================= IMAGE IMPROVEMENT ================= */
+
+img {
+  border-radius: 10px;
+}
+
+/* Card spacing */
+.card {
+  border-radius: 16px;
+}
+
+/* Mobile spacing */
+@media (max-width: 576px) {
+  .card {
+    padding: 20px !important;
+  }
+
+  h4 {
+    font-size: 20px;
+  }
+}
+
+/* Laptop */
+@media (min-width: 992px) {
+  .card {
+    padding: 30px !important;
+  }
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // 🔥 ADD THIS
+import { toast } from "react-toastify";
 
 function Profile() {
   const navigate = useNavigate();
@@ -9,7 +9,10 @@ function Profile() {
   const [profile, setProfile] = useState({
     username: "",
     phone: "",
-    role: "",
+    street: "",
+    city: "",
+    district: "",
+    pincode: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -18,7 +21,7 @@ function Profile() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.error("Please login to view profile ❌"); // 🔥 REPLACED
+      toast.error("Please login to view profile ❌");
       navigate("/login", { replace: true, state: { from: "/profile" } });
       return;
     }
@@ -34,7 +37,7 @@ function Profile() {
       })
       .catch((err) => {
         console.error(err);
-        toast.error("Failed to load profile ❌"); // 🔥 REPLACED
+        toast.error("Failed to load profile ❌");
       })
       .finally(() => {
         setLoading(false);
@@ -45,6 +48,12 @@ function Profile() {
     return <h3 className="text-center mt-5">Loading profile...</h3>;
   }
 
+  // 🔥 Combine address for display
+  const fullAddress = profile.street
+    ? `${profile.street}
+${profile.city}, ${profile.district} - ${profile.pincode}`
+    : "Not added yet";
+
   return (
     <div
       className="d-flex justify-content-center align-items-center bg-light"
@@ -54,6 +63,7 @@ function Profile() {
         className="card shadow border-0 p-4"
         style={{ width: "100%", maxWidth: "450px", borderRadius: "18px" }}
       >
+        {/* 🔥 Avatar */}
         <div className="text-center mb-4">
           <div
             className="rounded-circle bg-dark text-white d-inline-flex align-items-center justify-content-center"
@@ -64,13 +74,16 @@ function Profile() {
               fontWeight: "bold",
             }}
           >
-            {profile.username ? profile.username.charAt(0).toUpperCase() : "U"}
+            {profile.username
+              ? profile.username.charAt(0).toUpperCase()
+              : "U"}
           </div>
 
           <h2 className="mt-3 mb-1 fw-bold">My Profile</h2>
           <p className="text-muted mb-0">Manage your account details</p>
         </div>
 
+        {/* Username */}
         <div className="mb-3">
           <label className="form-label fw-semibold">Username</label>
           <input
@@ -81,6 +94,7 @@ function Profile() {
           />
         </div>
 
+        {/* Phone */}
         <div className="mb-3">
           <label className="form-label fw-semibold">Phone Number</label>
           <input
@@ -91,21 +105,24 @@ function Profile() {
           />
         </div>
 
+        {/* 🔥 Address (NEW FEATURE) */}
         <div className="mb-4">
-          <label className="form-label fw-semibold">Role</label>
-          <input
-            type="text"
+          <label className="form-label fw-semibold">Delivery Address</label>
+          <textarea
             className="form-control"
-            value={profile.role || ""}
+            rows="3"
+            value={fullAddress}
             readOnly
+            style={{ whiteSpace: "pre-line" }}
           />
         </div>
 
+        {/* 🔥 Orders Button */}
         <button
           className="btn btn-dark w-100"
           onClick={() => navigate("/orders")}
         >
-          View My Orders
+          View My Orders 🛍️
         </button>
       </div>
     </div>
