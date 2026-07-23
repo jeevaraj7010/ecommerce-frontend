@@ -8,17 +8,47 @@ function Navbar() {
   const [role, setRole] = useState("");
   const [token, setToken] = useState("");
 
-  useEffect(() => {
-    const user = localStorage.getItem("username") || "";
-    setUsername(user);
+ useEffect(() => {
+
+  const updateNavbar = () => {
+    setUsername(localStorage.getItem("username") || "");
     setRole(localStorage.getItem("role") || "");
     setToken(localStorage.getItem("token") || "");
-  }, []);
+  };
+
+
+  // first load
+  updateNavbar();
+
+
+  // listen for login/logout
+  window.addEventListener(
+    "authChange",
+    updateNavbar
+  );
+
+
+  return () => {
+    window.removeEventListener(
+      "authChange",
+      updateNavbar
+    );
+  };
+
+}, []);
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
+
+  localStorage.clear();
+
+  // 🔥 Update Navbar instantly
+  window.dispatchEvent(
+    new Event("authChange")
+  );
+
+  navigate("/login");
+
+};
 
   const handleProfileClick = () => {
     navigate("/profile");
