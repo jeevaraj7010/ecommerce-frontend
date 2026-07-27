@@ -78,6 +78,7 @@ function AdminLayout() {
           <Link to="/admin" style={linkStyle("/admin")}>Dashboard</Link>
           <Link to="/admin/orders" style={linkStyle("/admin/orders")}>Orders</Link>
           <Link to="/admin/users" style={linkStyle("/admin/users")}>Users</Link>
+          <Link to="/admin/inventory" style={linkStyle("/admin/inventory")}>Inventory 📦</Link>
         </nav>
 
         {/* Logout */}

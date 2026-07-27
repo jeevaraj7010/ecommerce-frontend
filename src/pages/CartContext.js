@@ -1,18 +1,37 @@
-import { createContext, useState } from "react";
+import { createContext, useState, useEffect } from "react";
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem("hoodify_cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
 
-  // ✅ Add to cart
+  useEffect(() => {
+    try {
+      localStorage.setItem("hoodify_cart", JSON.stringify(cartItems));
+    } catch (e) {
+      console.error("Cart localStorage error", e);
+    }
+  }, [cartItems]);
+
+  // ✅ Add to cart (matches product.id AND customImageUrl)
   const addToCart = (product) => {
     setCartItems((prev) => {
-      const exist = prev.find((item) => item.id === product.id);
+      const existIndex = prev.findIndex(
+        (item) =>
+          item.id === product.id &&
+          (item.customImageUrl || "") === (product.customImageUrl || "")
+      );
 
-      if (exist) {
-        return prev.map((item) =>
-          item.id === product.id
+      if (existIndex > -1) {
+        return prev.map((item, index) =>
+          index === existIndex
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -23,10 +42,10 @@ export const CartProvider = ({ children }) => {
   };
 
   // ➕ Increase
-  const increaseQty = (id) => {
+  const increaseQty = (indexOrId) => {
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id
+      prev.map((item, idx) =>
+        idx === indexOrId || item.id === indexOrId
           ? { ...item, quantity: item.quantity + 1 }
           : item
       )
@@ -34,10 +53,10 @@ export const CartProvider = ({ children }) => {
   };
 
   // ➖ Decrease
-  const decreaseQty = (id) => {
+  const decreaseQty = (indexOrId) => {
     setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === id && item.quantity > 1
+      prev.map((item, idx) =>
+        (idx === indexOrId || item.id === indexOrId) && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
           : item
       )
@@ -45,8 +64,10 @@ export const CartProvider = ({ children }) => {
   };
 
   // ❌ Remove
-  const removeFromCart = (id) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (indexOrId) => {
+    setCartItems((prev) =>
+      prev.filter((item, idx) => idx !== indexOrId && item.id !== indexOrId)
+    );
   };
 
   // 💰 Total
@@ -57,9 +78,10 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  // 🔥 NEW (IMPORTANT)
+  // 🔥 Clear cart
   const clearCart = () => {
     setCartItems([]);
+    localStorage.removeItem("hoodify_cart");
   };
 
   return (
@@ -71,7 +93,7 @@ export const CartProvider = ({ children }) => {
         decreaseQty,
         removeFromCart,
         getTotal,
-        clearCart, // ✅ ADD THIS
+        clearCart,
       }}
     >
       {children}

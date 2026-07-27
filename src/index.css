@@ -1,30 +1,75 @@
 /* 🌍 Global UI */
 body {
   margin: 0;
-  background: #f1f5f9;
-  font-family: 'Poppins', sans-serif;
+  background: #f8fafc;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  color: #1e293b;
 }
 
 /* Cards */
 .card {
-  border-radius: 18px !important;
-  transition: 0.3s;
+  border-radius: 16px !important;
+  transition: all 0.25s ease-in-out;
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
 }
 
 /* Buttons */
-button {
+button, .btn {
   border-radius: 10px !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 
-/* Product */
+/* Product Cards */
 .product-card {
   cursor: pointer;
+  overflow: hidden;
 }
+
+.product-card img {
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover img {
+  transform: scale(1.03);
+}
+
+/* Category Filter Pills */
+.category-pill {
+  border-radius: 20px !important;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-pill.active {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Custom Design Thumbnail Badge */
+.custom-design-badge {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-design-preview {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
 /* ================= TRACKING UI ================= */
 
 .tracking-container {
@@ -43,7 +88,6 @@ button {
   border-radius: 10px;
 }
 
-/* Active progress (green fill) */
 .tracking-line::after {
   content: "";
   position: absolute;
@@ -54,7 +98,6 @@ button {
   transition: 0.5s;
 }
 
-/* Steps container */
 .tracking-steps {
   display: flex;
   justify-content: space-between;
@@ -62,13 +105,11 @@ button {
   z-index: 2;
 }
 
-/* Each step */
 .step {
   text-align: center;
   width: 33%;
 }
 
-/* Circle */
 .circle {
   width: 18px;
   height: 18px;
@@ -78,20 +119,17 @@ button {
   transition: 0.3s;
 }
 
-/* Active circle */
 .circle.active {
   background: #22c55e;
   transform: scale(1.2);
 }
 
-/* Step text */
 .step p {
   font-size: 12px;
   margin-top: 6px;
   color: #6b7280;
 }
 
-/* Active text */
 .step.active p {
   color: #111827;
   font-weight: 600;
@@ -109,31 +147,41 @@ button {
   border: none;
 }
 
-/* ================= IMAGE IMPROVEMENT ================= */
+/* ================= RESPONSIVE LAYOUT BREAKPOINTS ================= */
 
-img {
-  border-radius: 10px;
-}
+@media (max-width: 375px) {
+  .container {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
 
-/* Card spacing */
-.card {
-  border-radius: 16px;
-}
-
-/* Mobile spacing */
-@media (max-width: 576px) {
   .card {
-    padding: 20px !important;
+    padding: 12px !important;
+  }
+
+  h2, h3 {
+    font-size: 1.4rem;
+  }
+}
+
+@media (min-width: 376px) and (max-width: 576px) {
+  .card {
+    padding: 16px !important;
   }
 
   h4 {
-    font-size: 20px;
+    font-size: 1.15rem;
   }
 }
 
-/* Laptop */
+@media (min-width: 577px) and (max-width: 991px) {
+  .card {
+    padding: 24px !important;
+  }
+}
+
 @media (min-width: 992px) {
   .card {
-    padding: 30px !important;
+    padding: 28px !important;
   }
 }

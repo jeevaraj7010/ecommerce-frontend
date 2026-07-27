@@ -1,137 +1,147 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
+import { WishlistContext } from "../context/WishlistContext";
 
 function Navbar() {
   const navigate = useNavigate();
+  const { wishlistCount } = useContext(WishlistContext);
 
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("");
   const [token, setToken] = useState("");
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
- useEffect(() => {
+  useEffect(() => {
+    const updateNavbar = () => {
+      setUsername(localStorage.getItem("username") || "");
+      setRole(localStorage.getItem("role") || "");
+      setToken(localStorage.getItem("token") || "");
+    };
 
-  const updateNavbar = () => {
-    setUsername(localStorage.getItem("username") || "");
-    setRole(localStorage.getItem("role") || "");
-    setToken(localStorage.getItem("token") || "");
-  };
+    updateNavbar();
+    window.addEventListener("authChange", updateNavbar);
 
-
-  // first load
-  updateNavbar();
-
-
-  // listen for login/logout
-  window.addEventListener(
-    "authChange",
-    updateNavbar
-  );
-
-
-  return () => {
-    window.removeEventListener(
-      "authChange",
-      updateNavbar
-    );
-  };
-
-}, []);
+    return () => {
+      window.removeEventListener("authChange", updateNavbar);
+    };
+  }, []);
 
   const handleLogout = () => {
-
-  localStorage.clear();
-
-  // 🔥 Update Navbar instantly
-  window.dispatchEvent(
-    new Event("authChange")
-  );
-
-  navigate("/login");
-
-};
+    localStorage.clear();
+    window.dispatchEvent(new Event("authChange"));
+    navigate("/login");
+  };
 
   const handleProfileClick = () => {
     navigate("/profile");
   };
 
-  // 🔥 RANDOM COLOR BASED ON USERNAME
   const colors = ["#ffc107", "#0d6efd", "#20c997", "#dc3545"];
-  const bg = colors[username.length % colors.length];
+  const bg = colors[username ? username.length % colors.length : 0];
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-
-      <Link className="navbar-brand fw-bold" to="/home">
-        Hoodify 🔥
-      </Link>
-
-      <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
-
-        <Link to="/products" className="btn btn-outline-light btn-sm">
-          Products
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-3 px-md-4 shadow-sm sticky-top">
+      <div className="container-fluid px-0">
+        <Link className="navbar-brand fw-bold fs-4 d-flex align-items-center gap-1" to="/home">
+          Hoodify 🔥
         </Link>
 
-        <Link to="/cart" className="btn btn-outline-light btn-sm">
-          Cart
-        </Link>
+        <button
+          className="navbar-toggler border-0"
+          type="button"
+          onClick={() => setIsNavOpen(!isNavOpen)}
+          aria-expanded={isNavOpen}
+          aria-label="Toggle navigation"
+        >
+          <span className="navbar-toggler-icon"></span>
+        </button>
 
-        {/* USER */}
-        {token && role === "ROLE_USER" && (
-          <Link to="/orders" className="btn btn-outline-light btn-sm">
-            Orders
-          </Link>
-        )}
+        <div className={`collapse navbar-collapse ${isNavOpen ? "show mt-3 mt-lg-0" : ""}`}>
+          <div className="ms-auto d-flex align-items-center gap-2 flex-wrap">
+            <Link to="/products" className="btn btn-outline-light btn-sm" onClick={() => setIsNavOpen(false)}>
+              Products
+            </Link>
 
-        {/* ADMIN */}
-        {token && role === "ROLE_ADMIN" && (
-          <Link to="/admin" className="btn btn-warning btn-sm">
-            Admin Panel
-          </Link>
-        )}
+            <Link to="/cart" className="btn btn-outline-light btn-sm" onClick={() => setIsNavOpen(false)}>
+              Cart
+            </Link>
 
-        {/* 🔥 PROFILE AVATAR */}
-        {token && username && (
-          <div
-            onClick={handleProfileClick}
-            style={{
-              width: "38px",
-              height: "38px",
-              borderRadius: "50%",
-              background: bg, // 🔥 USING RANDOM COLOR HERE
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: "bold",
-              cursor: "pointer",
-              fontSize: "16px",
-            }}
-            title={username}
-          >
-            {username.charAt(0).toUpperCase()}
+            {/* WISHLIST (USER) */}
+            {role !== "ROLE_ADMIN" && (
+              <Link to="/wishlist" className="btn btn-outline-light btn-sm position-relative" onClick={() => setIsNavOpen(false)}>
+                Wishlist ❤️
+                {wishlistCount > 0 && (
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "10px" }}>
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
+            {/* USER ORDERS */}
+            {token && role === "ROLE_USER" && (
+              <Link to="/orders" className="btn btn-outline-light btn-sm" onClick={() => setIsNavOpen(false)}>
+                Orders
+              </Link>
+            )}
+
+            {/* ADMIN */}
+            {token && role === "ROLE_ADMIN" && (
+              <Link to="/admin" className="btn btn-warning btn-sm" onClick={() => setIsNavOpen(false)}>
+                Admin Panel
+              </Link>
+            )}
+
+            {/* PROFILE AVATAR */}
+            {token && username && (
+              <div
+                onClick={() => {
+                  handleProfileClick();
+                  setIsNavOpen(false);
+                }}
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  background: bg,
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  fontSize: "15px",
+                }}
+                title={username}
+              >
+                {username.charAt(0).toUpperCase()}
+              </div>
+            )}
+
+            {/* AUTH */}
+            {token ? (
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  handleLogout();
+                  setIsNavOpen(false);
+                }}
+              >
+                Logout
+              </button>
+            ) : (
+              <>
+                <Link to="/login" className="btn btn-success btn-sm" onClick={() => setIsNavOpen(false)}>
+                  Login
+                </Link>
+
+                <Link to="/register" className="btn btn-outline-light btn-sm" onClick={() => setIsNavOpen(false)}>
+                  Register
+                </Link>
+              </>
+            )}
           </div>
-        )}
-
-        {/* AUTH */}
-        {token ? (
-          <button
-            className="btn btn-danger btn-sm"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        ) : (
-          <>
-            <Link to="/login" className="btn btn-success btn-sm">
-              Login
-            </Link>
-
-            <Link to="/register" className="btn btn-outline-light btn-sm">
-              Register
-            </Link>
-          </>
-        )}
-
+        </div>
       </div>
     </nav>
   );

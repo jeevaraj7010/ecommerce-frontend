@@ -1,7 +1,7 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "./CartContext";
-import { toast } from "react-toastify"; // 🔥 ADD THIS
+import { toast } from "react-toastify";
 
 function Cart() {
   const {
@@ -12,13 +12,14 @@ function Cart() {
     getTotal,
   } = useContext(CartContext);
 
+  const [enlargedImage, setEnlargedImage] = useState(null);
   const navigate = useNavigate();
 
   const handleCheckout = () => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      toast.warning("Please login to continue checkout ⚠️"); // 🔥 REPLACED
+      toast.warning("Please login to continue checkout ⚠️");
       navigate("/login", { state: { from: "/checkout" } });
       return;
     }
@@ -27,72 +28,127 @@ function Cart() {
   };
 
   return (
-    <div className="container mt-5">
-      <h2 className="text-center mb-4">Your Cart</h2>
+    <div className="container mt-5 py-3">
+      <h2 className="text-center mb-4 fw-bold">Your Cart 🛒</h2>
 
       {cartItems.length === 0 ? (
-        <p className="text-center">No items added yet.</p>
+        <div className="text-center py-5">
+          <p className="fs-5 text-muted">No items added yet.</p>
+
+          <button
+            className="btn btn-dark mt-2"
+            onClick={() => navigate("/products")}
+          >
+            Explore Clothing Categories
+          </button>
+        </div>
       ) : (
         <>
-          {cartItems.map((item) => (
-            <div key={item.id} className="card p-3 mb-3">
-              <div className="row align-items-center">
-
-                <div className="col-md-3">
+          {cartItems.map((item, index) => (
+            <div key={index} className="card p-3 mb-3 shadow-sm border-0">
+              <div className="row align-items-center g-3">
+                <div className="col-12 col-md-3 d-flex align-items-center gap-2">
                   <img
                     src={item.imageUrl}
                     alt={item.name}
-                    className="img-fluid"
-                    style={{ maxHeight: "120px", objectFit: "cover" }}
+                    className="img-fluid rounded"
+                    style={{ maxHeight: "100px", objectFit: "cover" }}
                   />
+
+                  {/* 🎨 CUSTOM DESIGN THUMBNAIL */}
+                  {item.customImageUrl && (
+                    <div className="text-center ms-2">
+                      <span className="badge bg-primary d-block mb-1">Your Design</span>
+                      <img
+                        src={item.customImageUrl}
+                        alt="Custom design"
+                        className="custom-design-preview rounded border cursor-pointer"
+                        style={{ width: "55px", height: "55px", objectFit: "cover", cursor: "pointer" }}
+                        onClick={() => setEnlargedImage(item.customImageUrl)}
+                        title="Click to Enlarge"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="col-md-3">
-                  <h5>{item.name}</h5>
-                  <p>{item.description}</p>
+                <div className="col-12 col-md-4">
+                  <h5 className="fw-bold mb-1">{item.name}</h5>
+                  <p className="text-muted small mb-0">{item.description}</p>
                 </div>
 
-                <div className="col-md-3 text-center">
+                <div className="col-6 col-md-2 text-center">
+                  <div className="d-inline-flex align-items-center border rounded px-2 py-1 bg-light">
+                    <button
+                      className="btn btn-sm btn-link text-dark text-decoration-none px-2 fw-bold"
+                      onClick={() => decreaseQty(index)}
+                    >
+                      -
+                    </button>
+                    <span className="px-2 fw-bold">{item.quantity}</span>
+                    <button
+                      className="btn btn-sm btn-link text-dark text-decoration-none px-2 fw-bold"
+                      onClick={() => increaseQty(index)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="col-6 col-md-3 text-end">
+                  <h5 className="fw-bold text-success mb-2">
+                    ₹{item.price * item.quantity}
+                  </h5>
+
                   <button
-                    className="btn btn-secondary me-2"
-                    onClick={() => decreaseQty(item.id)}
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={() => removeFromCart(index)}
                   >
-                    -
-                  </button>
-
-                  <span>{item.quantity}</span>
-
-                  <button
-                    className="btn btn-secondary ms-2"
-                    onClick={() => increaseQty(item.id)}
-                  >
-                    +
+                    Remove ❌
                   </button>
                 </div>
-
-                <div className="col-md-3 text-end">
-                  <h6>₹{item.price * item.quantity}</h6>
-
-                  <button
-                    className="btn btn-danger btn-sm mt-2"
-                    onClick={() => removeFromCart(item.id)}
-                  >
-                    Remove
-                  </button>
-                </div>
-
               </div>
             </div>
           ))}
 
-          <div className="text-end mt-4">
-            <h4>Total: ₹{getTotal()}</h4>
+          <div className="card p-4 mt-4 shadow-sm border-0 bg-light text-end">
+            <h4 className="fw-bold">Total: ₹{getTotal()}</h4>
 
-            <button className="btn btn-primary mt-3" onClick={handleCheckout}>
-              Proceed to Checkout
-            </button>
+            <div className="mt-3">
+              <button
+                className="btn btn-outline-dark me-2"
+                onClick={() => navigate("/products")}
+              >
+                Continue Shopping
+              </button>
+
+              <button className="btn btn-success btn-lg" onClick={handleCheckout}>
+                Proceed to Checkout 💳
+              </button>
+            </div>
           </div>
         </>
+      )}
+
+      {/* CLICK TO ENLARGE MODAL */}
+      {enlargedImage && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="bg-white p-3 rounded text-center">
+            <h6 className="fw-bold mb-2">Custom Design Preview</h6>
+            <img
+              src={enlargedImage}
+              alt="Enlarged design"
+              style={{ maxWidth: "80vw", maxHeight: "70vh", objectFit: "contain" }}
+            />
+            <div className="mt-3">
+              <button className="btn btn-secondary btn-sm" onClick={() => setEnlargedImage(null)}>
+                Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
