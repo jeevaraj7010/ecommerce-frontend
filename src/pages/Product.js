@@ -1,8 +1,8 @@
-import { useEffect, useState, useContext, useMemo } from "react";
-import axios from "axios";
+import { useState, useContext, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "./CartContext";
 import { WishlistContext } from "../context/WishlistContext";
+import { ProductContext } from "../context/ProductContext";
 import { toast } from "react-toastify";
 import Pagination from "../components/Pagination";
 import SkeletonProductCard from "../components/SkeletonProductCard";
@@ -23,43 +23,17 @@ const CATEGORIES = [
 const ITEMS_PER_PAGE = 12;
 
 function Products() {
-  const [allProducts, setAllProducts] = useState([]);
+  const { products: allProducts, loading } = useContext(ProductContext);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading] = useState(true);
 
   const { addToCart } = useContext(CartContext);
   const { isWishlisted, toggleWishlist } = useContext(WishlistContext);
   const navigate = useNavigate();
   const role = localStorage.getItem("role");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [productRes, ratingRes] = await Promise.all([
-          axios.get("https://ecommerce-backend-1-tsra.onrender.com/api/products"),
-          axios.get("https://ecommerce-backend-1-tsra.onrender.com/api/reviews/average/all"),
-        ]);
-
-        const ratingsMap = ratingRes.data || {};
-
-        const updatedProducts = (productRes.data || []).map((p) => ({
-          ...p,
-          rating: ratingsMap[p.id] || 0,
-        }));
-
-        setAllProducts(updatedProducts);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
 
   // Filter products by category AND search query
   const filteredProducts = useMemo(() => {

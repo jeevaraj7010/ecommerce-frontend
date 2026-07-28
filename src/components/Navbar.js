@@ -28,6 +28,7 @@ function Navbar() {
 
   const handleLogout = () => {
     localStorage.clear();
+    sessionStorage.removeItem("products_cache");
     window.dispatchEvent(new Event("authChange"));
     navigate("/login");
   };

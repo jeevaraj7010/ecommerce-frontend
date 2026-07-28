@@ -23,7 +23,11 @@ function ProductDetails() {
   const [distribution, setDistribution] = useState({ total: 0, stars: {} });
   const [isVerifiedBuyer, setIsVerifiedBuyer] = useState(false);
 
-  // Multi-image upload & progress state
+  // Multi-image upload, custom text & customization state
+  const [customText, setCustomText] = useState("");
+  const [customFile, setCustomFile] = useState(null);
+  const [customPreview, setCustomPreview] = useState("");
+  const [uploadedCustomUrl, setUploadedCustomUrl] = useState("");
   const [customImageUrls, setCustomImageUrls] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -152,6 +156,10 @@ function ProductDetails() {
     const file = e.target.files[0];
     if (!file) return;
 
+    setCustomFile(file);
+    const localPreview = URL.createObjectURL(file);
+    setCustomPreview(localPreview);
+
     setIsUploading(true);
     setUploadProgress(20);
 
@@ -160,12 +168,37 @@ function ProductDetails() {
       const compressedUrl = await processAndCompressImage(file);
       setUploadProgress(90);
 
+      // Attempt immediate upload to backend Cloudinary endpoint if logged in
+      const currentToken = localStorage.getItem("token");
+      if (currentToken) {
+        try {
+          const formData = new FormData();
+          formData.append("productId", product.id);
+          formData.append("image", file);
+          if (customText.trim()) {
+            formData.append("customText", customText);
+          }
+
+          const res = await axios.post(
+            "https://ecommerce-backend-1-tsra.onrender.com/api/customization/upload",
+            formData,
+            { headers: { Authorization: `Bearer ${currentToken}`, "Content-Type": "multipart/form-data" } }
+          );
+
+          if (res.data && res.data.imageUrl) {
+            setUploadedCustomUrl(res.data.imageUrl);
+          }
+        } catch (err) {
+          console.error("Cloudinary endpoint upload fallback:", err);
+        }
+      }
+
       setTimeout(() => {
         setUploadProgress(100);
         setCustomImageUrls((prev) => [...prev, compressedUrl]);
         setIsUploading(false);
         setUploadProgress(0);
-        toast.success("Design image compressed & uploaded ✨");
+        toast.success("Design image ready for preview & upload ✨");
       }, 300);
     } catch (error) {
       setIsUploading(false);
@@ -176,28 +209,63 @@ function ProductDetails() {
 
   const handleRemoveCustomImage = (indexToRemove) => {
     setCustomImageUrls((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+    setCustomFile(null);
+    setCustomPreview("");
+    setUploadedCustomUrl("");
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (isOut) {
       toast.error("This product is currently out of stock ❌");
       return;
     }
 
-    if (isCustomizable && customImageUrls.length === 0) {
-      toast.warning("Please upload at least one custom design image 🎨");
+    if (isCustomizable && !customFile && customImageUrls.length === 0 && !customPreview) {
+      toast.warning("Please upload a custom design image 🎨");
       return;
+    }
+
+    let finalImageUrl = uploadedCustomUrl || (customImageUrls.length > 0 ? customImageUrls[0] : customPreview);
+
+    // If file is selected but hasn't uploaded yet and user is logged in, upload now
+    if (isCustomizable && customFile && !uploadedCustomUrl) {
+      const currentToken = localStorage.getItem("token");
+      if (currentToken) {
+        try {
+          const formData = new FormData();
+          formData.append("productId", product.id);
+          formData.append("image", customFile);
+          if (customText.trim()) {
+            formData.append("customText", customText);
+          }
+
+          const res = await axios.post(
+            "https://ecommerce-backend-1-tsra.onrender.com/api/customization/upload",
+            formData,
+            { headers: { Authorization: `Bearer ${currentToken}`, "Content-Type": "multipart/form-data" } }
+          );
+
+          if (res.data && res.data.imageUrl) {
+            finalImageUrl = res.data.imageUrl;
+            setUploadedCustomUrl(res.data.imageUrl);
+          }
+        } catch (err) {
+          console.error("Customization upload error:", err);
+        }
+      }
     }
 
     const productToAdd = {
       ...product,
-      customImageUrl: customImageUrls[0] || null,
-      customImageUrls: customImageUrls,
+      customImageUrl: finalImageUrl || null,
+      customImageUrls: finalImageUrl ? [finalImageUrl] : customImageUrls,
+      customText: customText.trim() || null,
     };
 
     addToCart(productToAdd);
     toast.success(`${product.name} added to cart 🛒`);
   };
+
 
   // ⭐ Submit Review
   const submitReview = () => {
@@ -335,13 +403,23 @@ function ProductDetails() {
 
           <h3 className="text-success fw-bold">₹{product.price}</h3>
 
-          {/* 🎨 CUSTOM MULTI-IMAGE UPLOAD SECTION */}
+          {/* 🎨 CUSTOMIZATION SECTION */}
           {isCustomizable && (
-            <div className="card bg-light border-dashed p-3 my-3">
-              <h6 className="fw-bold mb-2">Upload Custom Designs 🎨</h6>
-              <p className="small text-muted mb-2">
-                Accepted: JPG, PNG, WEBP (Min 300x300px, Max 5MB). Images auto-compressed.
-              </p>
+            <div className="card bg-light border-dashed p-3 my-3 shadow-sm rounded-3">
+              <h5 className="fw-bold text-primary mb-3">Customize Your Product ✨</h5>
+
+              {/* 1. Upload image option */}
+              <div className="mb-3">
+                <label className="form-label fw-semibold small">1. Upload Design Image 🖼️</label>
+                <input
+                  type="file"
+                  className="form-control form-control-sm"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  disabled={isUploading}
+                />
+                <small className="text-muted d-block mt-1">Accepted: JPG, PNG, WEBP (Min 300x300px)</small>
+              </div>
 
               {/* Progress Indicator */}
               {isUploading && (
@@ -354,43 +432,48 @@ function ProductDetails() {
                 </div>
               )}
 
-              {/* Multi-Image List Previews */}
-              {customImageUrls.length > 0 && (
-                <div className="d-flex flex-wrap gap-2 mb-3">
-                  {customImageUrls.map((url, index) => (
-                    <div key={index} className="position-relative">
+              {/* 2. Image preview before upload / after select */}
+              {(customPreview || customImageUrls.length > 0) && (
+                <div className="mb-3">
+                  <label className="form-label fw-semibold small">2. Image Preview 🔍</label>
+                  <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <div className="position-relative d-inline-block">
                       <img
-                        src={url}
-                        alt={`Custom design ${index + 1}`}
-                        className="custom-design-preview rounded border cursor-pointer"
-                        style={{ width: "65px", height: "65px", objectFit: "cover", cursor: "pointer" }}
-                        onClick={() => setEnlargedImage(url)}
-                        title="Click to Enlarge"
+                        src={customPreview || customImageUrls[0]}
+                        alt="Design Preview"
+                        className="rounded border shadow-sm cursor-pointer"
+                        style={{ width: "90px", height: "90px", objectFit: "cover", cursor: "pointer" }}
+                        onClick={() => setEnlargedImage(customPreview || customImageUrls[0])}
+                        title="Click to enlarge preview"
                       />
                       <button
                         className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 rounded-circle"
                         style={{ width: "20px", height: "20px", fontSize: "10px", lineHeight: "1" }}
-                        onClick={() => handleRemoveCustomImage(index)}
+                        onClick={() => handleRemoveCustomImage(0)}
                         title="Remove image"
                       >
                         ×
                       </button>
                     </div>
-                  ))}
+                    <span className="small text-success fw-semibold">✓ Image uploaded & preview ready</span>
+                  </div>
                 </div>
               )}
 
-              <div className="input-group">
+              {/* 3. Optional custom text input */}
+              <div className="mb-2">
+                <label className="form-label fw-semibold small">3. Custom Text (Optional) ✍️</label>
                 <input
-                  type="file"
-                  className="form-control btn-sm"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleImageChange}
-                  disabled={isUploading}
+                  type="text"
+                  className="form-control form-control-sm rounded-2"
+                  placeholder='Enter your text (e.g. "Dream Big")'
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
                 />
               </div>
             </div>
           )}
+
 
           <div className="mt-4">
             <button

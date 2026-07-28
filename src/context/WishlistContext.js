@@ -9,12 +9,15 @@ export function WishlistProvider({ children }) {
   const [wishlistCount, setWishlistCount] = useState(0);
   const [wishlistIds, setWishlistIds] = useState(new Set());
 
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role");
+  const getToken = () => localStorage.getItem("token");
+  const getRole = () => localStorage.getItem("role");
 
-  // Fetch wishlist from backend
+  // Fetch wishlist from backend using fresh token
   const fetchWishlist = useCallback(async () => {
-    if (!token || role === "ROLE_ADMIN") {
+    const currentToken = getToken();
+    const currentRole = getRole();
+
+    if (!currentToken || currentRole === "ROLE_ADMIN") {
       setWishlistItems([]);
       setWishlistCount(0);
       setWishlistIds(new Set());
@@ -23,7 +26,7 @@ export function WishlistProvider({ children }) {
 
     try {
       const res = await axios.get("https://ecommerce-backend-1-tsra.onrender.com/api/wishlist", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${currentToken}` },
       });
 
       const products = res.data.products || [];
@@ -34,14 +37,25 @@ export function WishlistProvider({ children }) {
     } catch (err) {
       console.error("Wishlist fetch error", err);
     }
-  }, [token, role]);
+  }, []);
 
   useEffect(() => {
     fetchWishlist();
+
+    const handleAuthChange = () => {
+      fetchWishlist();
+    };
+
+    window.addEventListener("authChange", handleAuthChange);
+    return () => {
+      window.removeEventListener("authChange", handleAuthChange);
+    };
   }, [fetchWishlist]);
 
   // Optimistic Toggle Wishlist
   const toggleWishlist = async (product) => {
+    const token = getToken();
+
     if (!token) {
       toast.warning("Please login to save items to your wishlist ⚠️");
       return;
@@ -97,7 +111,9 @@ export function WishlistProvider({ children }) {
   const isWishlisted = (productId) => wishlistIds.has(productId);
 
   const removeFromWishlist = async (productId) => {
+    const token = getToken();
     if (!token) return;
+
     try {
       const res = await axios.delete(
         `https://ecommerce-backend-1-tsra.onrender.com/api/wishlist/${productId}`,

@@ -82,9 +82,15 @@ function Orders() {
                     <div>
                       <h5 className="fw-bold mb-1">{o.productName}</h5>
                       <p className="text-muted small mb-1">Order ID: #{o.id}</p>
+                      {o.customText && (
+                        <p className="small mb-1 text-primary fw-semibold">
+                          Customization Text: "{o.customText}"
+                        </p>
+                      )}
                       <p className="fw-bold text-success mb-0">₹{o.totalPrice} ({o.quantity} qty)</p>
                     </div>
                   </div>
+
 
                   {/* 3 DOT MENU */}
                   <div className="position-relative">

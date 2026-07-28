@@ -50,6 +50,7 @@ function AdminLayout() {
   // 🚪 Logout
   const handleLogout = () => {
     localStorage.clear();
+    sessionStorage.removeItem("products_cache");
     navigate("/login");
   };
 
@@ -79,7 +80,9 @@ function AdminLayout() {
           <Link to="/admin/orders" style={linkStyle("/admin/orders")}>Orders</Link>
           <Link to="/admin/users" style={linkStyle("/admin/users")}>Users</Link>
           <Link to="/admin/inventory" style={linkStyle("/admin/inventory")}>Inventory 📦</Link>
+          <Link to="/admin/customizations" style={linkStyle("/admin/customizations")}>Customizations ✨</Link>
         </nav>
+
 
         {/* Logout */}
         <button

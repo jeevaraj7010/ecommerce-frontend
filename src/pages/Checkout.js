@@ -119,7 +119,7 @@ function Checkout() {
         }
       );
 
-      // 🔥 SAVE ORDERS WITH DESIGN IMAGE URL PERSISTENCE
+      // 🔥 SAVE ORDERS WITH DESIGN IMAGE URL & CUSTOM TEXT PERSISTENCE
       await Promise.all(
         cartItems.map((item) =>
           axios.post(
@@ -127,6 +127,7 @@ function Checkout() {
             {
               designImageUrl: item.customImageUrl || null,
               customImageUrl: item.customImageUrl || null,
+              customText: item.customText || null,
             },
             {
               headers: {
@@ -188,12 +189,18 @@ function Checkout() {
                   )}
                   <div>
                     <h6 className="mb-0 fw-semibold">{item.name}</h6>
+                    {item.customText && (
+                      <small className="badge bg-light text-dark border d-block my-1">
+                        Text: "{item.customText}"
+                      </small>
+                    )}
                     <small className="text-muted">Qty: {item.quantity}</small>
                   </div>
                 </div>
                 <span className="fw-bold">₹{item.price * item.quantity}</span>
               </div>
             ))}
+
             <div className="d-flex justify-content-between pt-2">
               <span className="fw-bold fs-5">Total</span>
               <span className="fw-bold fs-5 text-success">₹{getTotal()}</span>
