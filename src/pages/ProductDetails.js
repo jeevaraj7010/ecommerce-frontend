@@ -20,10 +20,9 @@ function ProductDetails() {
   const [comment, setComment] = useState("");
   const [avg, setAvg] = useState(0);
   const [reviewSort, setReviewSort] = useState("newest");
-  const [distribution, setDistribution] = useState({ total: 0, stars: {} });
   const [isVerifiedBuyer, setIsVerifiedBuyer] = useState(false);
 
-  // Multi-image upload, custom text & customization state
+  // Customization state
   const [customText, setCustomText] = useState("");
   const [customFile, setCustomFile] = useState(null);
   const [customPreview, setCustomPreview] = useState("");
@@ -31,16 +30,15 @@ function ProductDetails() {
   const [customImageUrls, setCustomImageUrls] = useState([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
 
-  // Pagination for reviews
   const [reviewPage, setReviewPage] = useState(1);
 
   const username = localStorage.getItem("username");
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
-  // Fetch reviews with sorting
   const fetchReviews = useCallback((sortOpt = reviewSort) => {
     axios
       .get(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/${id}?sort=${sortOpt}`)
@@ -48,7 +46,6 @@ function ProductDetails() {
       .catch(console.error);
   }, [id, reviewSort]);
 
-  // 🚀 Fetch product & review data
   useEffect(() => {
     axios
       .get(`https://ecommerce-backend-1-tsra.onrender.com/api/products/${id}`)
@@ -62,11 +59,6 @@ function ProductDetails() {
       .then((res) => setAvg(res.data || 0))
       .catch(console.error);
 
-    axios
-      .get(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/distribution/${id}`)
-      .then((res) => setDistribution(res.data || { total: 0, stars: {} }))
-      .catch(console.error);
-
     if (username) {
       axios
         .get(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/verified/${id}/${username}`)
@@ -75,7 +67,15 @@ function ProductDetails() {
     }
   }, [id, username, fetchReviews]);
 
-  if (!product) return <h3 className="text-center mt-5">Loading product...</h3>;
+  if (!product) {
+    return (
+      <div className="container text-center py-5">
+        <div className="spinner-border text-dark" role="status">
+          <span className="visually-hidden">Loading product details...</span>
+        </div>
+      </div>
+    );
+  }
 
   const isCustomizable =
     product.customizable === true ||
@@ -83,20 +83,19 @@ function ProductDetails() {
     (product.name && product.name.toLowerCase().includes("custom"));
 
   const isOut = product.quantity <= 0;
-  const isLow = product.quantity > 0 && product.quantity <= 5;
   const wishlisted = isWishlisted(product.id);
 
-  // 🎨 Image Compression & Dimension Validation
+  // File Validation: JPG, PNG, WEBP, Max 5MB
   const processAndCompressImage = (file) => {
     return new Promise((resolve, reject) => {
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
       if (!validTypes.includes(file.type)) {
-        reject("Invalid file format. Please upload JPG, PNG, or WEBP ❌");
+        reject("Invalid file format. Supported formats: JPG, PNG, WEBP ❌");
         return;
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        reject("File size exceeds 5MB limit ❌");
+        reject("File size exceeds maximum limit of 5 MB ❌");
         return;
       }
 
@@ -105,40 +104,25 @@ function ProductDetails() {
 
       img.onload = () => {
         URL.revokeObjectURL(objectUrl);
-
-        if (img.width < 300 || img.height < 300) {
-          reject("Image dimensions too small. Minimum size is 300x300px for print quality ❌");
-          return;
-        }
-
-        if (img.width > 5000 || img.height > 5000) {
-          reject("Image dimensions too large. Maximum size is 5000x5000px ❌");
-          return;
-        }
-
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
+        const canvas = document.createElement("canvas");
+        const MAX_DIM = 1200;
         let width = img.width;
         let height = img.height;
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
           }
         }
 
-        const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-
         const compressedDataUrl = canvas.toDataURL("image/webp", 0.85);
         resolve(compressedDataUrl);
       };
@@ -152,8 +136,7 @@ function ProductDetails() {
     });
   };
 
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
+  const handleSelectedFile = async (file) => {
     if (!file) return;
 
     setCustomFile(file);
@@ -161,14 +144,12 @@ function ProductDetails() {
     setCustomPreview(localPreview);
 
     setIsUploading(true);
-    setUploadProgress(20);
+    setUploadProgress(30);
 
     try {
-      setUploadProgress(50);
       const compressedUrl = await processAndCompressImage(file);
-      setUploadProgress(90);
+      setUploadProgress(70);
 
-      // Attempt immediate upload to backend Cloudinary endpoint if logged in
       const currentToken = localStorage.getItem("token");
       if (currentToken) {
         try {
@@ -193,13 +174,11 @@ function ProductDetails() {
         }
       }
 
-      setTimeout(() => {
-        setUploadProgress(100);
-        setCustomImageUrls((prev) => [...prev, compressedUrl]);
-        setIsUploading(false);
-        setUploadProgress(0);
-        toast.success("Design image ready for preview & upload ✨");
-      }, 300);
+      setUploadProgress(100);
+      setCustomImageUrls([compressedUrl]);
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast.success("Design image uploaded & preview updated ✨");
     } catch (error) {
       setIsUploading(false);
       setUploadProgress(0);
@@ -207,8 +186,26 @@ function ProductDetails() {
     }
   };
 
-  const handleRemoveCustomImage = (indexToRemove) => {
-    setCustomImageUrls((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleSelectedFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleRemoveCustomImage = () => {
+    setCustomImageUrls([]);
     setCustomFile(null);
     setCustomPreview("");
     setUploadedCustomUrl("");
@@ -227,7 +224,6 @@ function ProductDetails() {
 
     let finalImageUrl = uploadedCustomUrl || (customImageUrls.length > 0 ? customImageUrls[0] : customPreview);
 
-    // If file is selected but hasn't uploaded yet and user is logged in, upload now
     if (isCustomizable && customFile && !uploadedCustomUrl) {
       const currentToken = localStorage.getItem("token");
       if (currentToken) {
@@ -266,8 +262,6 @@ function ProductDetails() {
     toast.success(`${product.name} added to cart 🛒`);
   };
 
-
-  // ⭐ Submit Review
   const submitReview = () => {
     if (!token) {
       toast.error("Please login to submit a review ❌");
@@ -293,42 +287,6 @@ function ProductDetails() {
       .catch((err) => toast.error(err.response?.data || "Review submission failed ❌"));
   };
 
-  // ❌ Delete Review
-  const deleteReview = (rid) => {
-    axios
-      .delete(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/${rid}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(() => {
-        toast.error("Deleted ❌");
-        setReviews((prev) => prev.filter((r) => r.id !== rid));
-      });
-  };
-
-  // ✏️ Edit Review
-  const editReview = (rid) => {
-    axios
-      .put(
-        `https://ecommerce-backend-1-tsra.onrender.com/api/reviews/${rid}`,
-        { rating, comment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      .then(() => {
-        toast.info("Updated ✏️");
-        setReviews((prev) =>
-          prev.map((r) => (r.id === rid ? { ...r, rating, comment } : r))
-        );
-      });
-  };
-
-  const handleSortChange = (e) => {
-    const sortVal = e.target.value;
-    setReviewSort(sortVal);
-    setReviewPage(1);
-    fetchReviews(sortVal);
-  };
-
-  // Pagination for reviews (5 reviews per page)
   const totalReviewPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE) || 1;
   const currentReviews = reviews.slice(
     (reviewPage - 1) * REVIEWS_PER_PAGE,
@@ -336,155 +294,186 @@ function ProductDetails() {
   );
 
   return (
-    <div className="container mt-5 py-3">
-      {/* PRODUCT MAIN CONTAINER */}
-      <div className="row justify-content-center align-items-center g-4">
-        <div className="col-12 col-md-5 text-center position-relative">
-          <div className="position-relative d-inline-block">
-            <img
-              src={product.imageUrl || "https://via.placeholder.com/300"}
-              alt={product.name}
-              className="img-fluid rounded shadow-sm"
-              style={{ maxHeight: "350px", objectFit: "cover" }}
-            />
+    <div className="container py-5">
+      <div className="row g-5 align-items-start">
+        {/* PRODUCT & CUSTOM REAL-TIME PREVIEW IMAGE */}
+        <div className="col-12 col-md-6">
+          <div className="card border-0 shadow-sm p-4 text-center rounded-5 bg-white position-relative overflow-hidden">
+            <div className="position-relative d-inline-block mx-auto" style={{ maxWidth: "100%" }}>
+              <img
+                src={product.imageUrl || "https://picsum.photos/400"}
+                alt={product.name}
+                className="img-fluid rounded-4 shadow-sm"
+                style={{ maxHeight: "420px", objectFit: "cover" }}
+              />
+            </div>
+
             {role !== "ROLE_ADMIN" && (
               <button
-                className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow border-0 p-2"
-                style={{ width: "42px", height: "42px", lineHeight: "1" }}
+                className="position-absolute top-0 end-0 m-4 btn btn-light rounded-circle shadow border-0 p-2 d-flex align-items-center justify-content-center"
+                style={{ width: "44px", height: "44px" }}
                 onClick={() => toggleWishlist(product)}
                 title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
               >
-                <span style={{ fontSize: "20px", color: wishlisted ? "red" : "#aaa" }}>
+                <span style={{ fontSize: "20px", color: wishlisted ? "#EF4444" : "#aaa" }}>
                   {wishlisted ? "❤️" : "🤍"}
                 </span>
               </button>
             )}
-            {isCustomizable && (
-              <span className="position-absolute top-0 start-0 m-2 badge bg-primary">
-                Customizable Product ✨
-              </span>
-            )}
           </div>
         </div>
 
+        {/* DETAILS & CUSTOMIZATION CONTROLS */}
         <div className="col-12 col-md-6">
-          <h2>{product.name}</h2>
-          <p className="text-muted">{product.description}</p>
+          <span className="badge rounded-pill bg-dark text-white px-3 py-1.5 text-xs mb-2">
+            {product.category || "Premium Apparel"}
+          </span>
+          <h1 className="fw-extrabold text-dark mb-2" style={{ letterSpacing: "-1px" }}>{product.name}</h1>
+          <p className="text-secondary mb-3">{product.description}</p>
 
-          {/* ⭐ Average Rating & Stock Status */}
-          <div className="d-flex align-items-center gap-3 mb-3 flex-wrap">
-            <div className="d-flex align-items-center">
-              <div style={{ fontSize: "18px" }}>
-                {Array.from({ length: 5 }, (_, i) => (
-                  <span
-                    key={i}
-                    style={{ color: i < Math.round(avg) ? "gold" : "#ccc" }}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-              <span className="ms-2 fw-semibold">({avg.toFixed(1)}) • {reviews.length} Reviews</span>
+          <div className="d-flex align-items-center gap-3 mb-3">
+            <div className="d-flex align-items-center text-warning fs-5">
+              {"★".repeat(Math.round(avg))}
+              <span className="ms-2 text-dark fs-6 fw-bold">({avg.toFixed(1)})</span>
             </div>
-
-            {/* Stock Badge */}
-            <div>
-              {isOut ? (
-                <span className="badge bg-danger fs-6">🔴 Out of Stock</span>
-              ) : isLow ? (
-                <span className="badge bg-warning text-dark fs-6">
-                  🟡 Only {product.quantity} Left
-                </span>
-              ) : (
-                <span className="badge bg-success fs-6">🟢 In Stock ({product.quantity})</span>
-              )}
-            </div>
+            <span className="text-muted small">• {reviews.length} Reviews</span>
           </div>
 
-          <h3 className="text-success fw-bold">₹{product.price}</h3>
+          <h2 className="fw-extrabold text-dark mb-4">₹{product.price}</h2>
 
-          {/* 🎨 CUSTOMIZATION SECTION */}
+          {/* 🎨 CUSTOM PRODUCT SECTION */}
           {isCustomizable && (
-            <div className="card bg-light border-dashed p-3 my-3 shadow-sm rounded-3">
-              <h5 className="fw-bold text-primary mb-3">Customize Your Product ✨</h5>
+            <div className="card border-0 bg-light p-4 rounded-4 mb-4 shadow-sm">
+              <h5 className="fw-bold text-dark mb-1">Customize Your Product ✨</h5>
+              <p className="small text-muted mb-3">Upload your artwork and add personalized custom text.</p>
 
-              {/* 1. Upload image option */}
-              <div className="mb-3">
-                <label className="form-label fw-semibold small">1. Upload Design Image 🖼️</label>
-                <input
-                  type="file"
-                  className="form-control form-control-sm"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleImageChange}
-                  disabled={isUploading}
-                />
-                <small className="text-muted d-block mt-1">Accepted: JPG, PNG, WEBP (Min 300x300px)</small>
+              {/* Drag and Drop Image Upload Zone */}
+              <div
+                className={`border-2 border-dashed rounded-4 p-4 text-center bg-white transition-all ${
+                  isDragging ? "border-primary bg-primary-subtle" : "border-gray-300"
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                style={{ cursor: "pointer" }}
+              >
+                <div className="fs-2 mb-1">🖼️</div>
+                <h6 className="fw-bold mb-1">Drag & Drop Image Here</h6>
+                <p className="small text-muted mb-2">Supported: JPG, PNG, WEBP (Max 5 MB)</p>
+
+                <label className="btn btn-outline-dark btn-sm rounded-pill px-4 cursor-pointer">
+                  Browse File
+                  <input
+                    type="file"
+                    className="d-none"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => e.target.files[0] && handleSelectedFile(e.target.files[0])}
+                    disabled={isUploading}
+                  />
+                </label>
               </div>
 
-              {/* Progress Indicator */}
+              {/* Upload Progress Bar */}
               {isUploading && (
-                <div className="progress mb-3" style={{ height: "8px" }}>
-                  <div
-                    className="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                    role="progressbar"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
+                <div className="progress mt-3" style={{ height: "6px" }}>
+                  <div className="progress-bar bg-dark" style={{ width: `${uploadProgress}%` }}></div>
                 </div>
               )}
 
-              {/* 2. Image preview before upload / after select */}
-              {(customPreview || customImageUrls.length > 0) && (
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small">2. Image Preview 🔍</label>
-                  <div className="d-flex align-items-center gap-2 flex-wrap">
-                    <div className="position-relative d-inline-block">
-                      <img
-                        src={customPreview || customImageUrls[0]}
-                        alt="Design Preview"
-                        className="rounded border shadow-sm cursor-pointer"
-                        style={{ width: "90px", height: "90px", objectFit: "cover", cursor: "pointer" }}
-                        onClick={() => setEnlargedImage(customPreview || customImageUrls[0])}
-                        title="Click to enlarge preview"
-                      />
-                      <button
-                        className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 rounded-circle"
-                        style={{ width: "20px", height: "20px", fontSize: "10px", lineHeight: "1" }}
-                        onClick={() => handleRemoveCustomImage(0)}
-                        title="Remove image"
-                      >
-                        ×
-                      </button>
+              {/* Uploaded Preview */}
+              {(customPreview || customImageUrls[0]) && (
+                <div className="d-flex align-items-center justify-content-between bg-white p-3 rounded-3 border mt-3">
+                  <div className="d-flex align-items-center gap-3">
+                    <img
+                      src={customPreview || customImageUrls[0]}
+                      alt="Uploaded preview"
+                      className="rounded border"
+                      style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                    />
+                    <div>
+                      <small className="fw-bold d-block text-dark">Custom Design Ready</small>
+                      <small className="text-success">✓ Verified format & size</small>
                     </div>
-                    <span className="small text-success fw-semibold">✓ Image uploaded & preview ready</span>
                   </div>
+                  <button className="btn btn-sm btn-outline-danger rounded-circle" onClick={handleRemoveCustomImage}>
+                    ✕
+                  </button>
                 </div>
               )}
 
-              {/* 3. Optional custom text input */}
-              <div className="mb-2">
-                <label className="form-label fw-semibold small">3. Custom Text (Optional) ✍️</label>
+              {/* Custom Text Input */}
+              <div className="mt-3">
+                <label className="form-label small fw-bold text-dark mb-1">Custom Text</label>
                 <input
                   type="text"
-                  className="form-control form-control-sm rounded-2"
-                  placeholder='Enter your text (e.g. "Dream Big")'
+                  className="form-control rounded-3 border-0 shadow-sm"
+                  placeholder='Enter text to print (e.g. "HOODIFY 2026")'
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
                 />
               </div>
+
+              {/* PREMIUM DESIGN PREVIEW CARD */}
+              {(customPreview || customImageUrls[0] || customText) && (
+                <div className="card border-0 bg-white p-3 rounded-4 mt-4 shadow-sm">
+                  <h6 className="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                    <span>✨ Design Preview</span>
+                    <small className="badge bg-dark text-white fw-normal">Customization</small>
+                  </h6>
+
+                  <div className="row align-items-center g-3">
+                    <div className="col-4 text-center">
+                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>Apparel</small>
+                      <img
+                        src={product.imageUrl || "https://picsum.photos/200"}
+                        alt={product.name}
+                        className="rounded-3 img-fluid border"
+                        style={{ maxHeight: "80px", objectFit: "cover" }}
+                      />
+                      <small className="fw-bold text-dark d-block text-truncate mt-1" style={{ fontSize: "11px" }}>
+                        {product.name}
+                      </small>
+                    </div>
+
+                    <div className="col-4 text-center">
+                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>Artwork</small>
+                      {customPreview || customImageUrls[0] ? (
+                        <img
+                          src={customPreview || customImageUrls[0]}
+                          alt="Uploaded artwork preview"
+                          className="rounded-3 img-fluid border shadow-sm"
+                          style={{ maxHeight: "80px", objectFit: "contain" }}
+                        />
+                      ) : (
+                        <div className="rounded-3 bg-light border p-2 text-muted small">No Image</div>
+                      )}
+                    </div>
+
+                    <div className="col-4">
+                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>Custom Text</small>
+                      <p className="fw-bold text-dark bg-light p-2 rounded-3 border mb-0 small text-truncate">
+                        {customText ? `"${customText}"` : "None"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-
-          <div className="mt-4">
+          {/* ADD TO CART / OUT OF STOCK BUTTON (STRICT CUSTOMER STOCK HIDING) */}
+          <div className="d-flex gap-3 mt-4">
             <button
-              className="btn btn-dark btn-lg me-2"
-              onClick={handleAddToCart}
+              className={`btn btn-lg flex-grow-1 rounded-pill py-3 fw-bold ${
+                isOut ? "btn-secondary" : "btn-dark shadow"
+              }`}
               disabled={isOut}
+              onClick={handleAddToCart}
             >
-              {isOut ? "Out of Stock 🔴" : "Add to Cart 🛒"}
+              {isOut ? "OUT OF STOCK" : "Add To Cart"}
             </button>
             <button
-              className="btn btn-outline-dark btn-lg"
+              className="btn btn-outline-dark btn-lg rounded-pill px-4"
               onClick={() => navigate("/cart")}
             >
               Go to Cart
@@ -495,171 +484,114 @@ function ProductDetails() {
 
       <hr className="my-5" />
 
-      {/* RATING DISTRIBUTION BREAKDOWN */}
+      {/* WRITE A REVIEW SECTION */}
       <div className="row justify-content-center mb-5">
         <div className="col-12 col-md-8">
-          <div className="card border-0 shadow-sm p-4 rounded-4 bg-light">
-            <h5 className="fw-bold mb-3">Rating Breakdown ⭐</h5>
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = distribution.stars?.[`${star}star`] || 0;
-              const total = distribution.total || 1;
-              const pct = Math.round((count / total) * 100);
+          <div className="card border-0 shadow-sm p-4 rounded-4 bg-white">
+            <h5 className="fw-bold text-dark mb-3">Write a Customer Review</h5>
 
-              return (
-                <div key={star} className="d-flex align-items-center gap-2 mb-2">
-                  <span style={{ width: "40px", fontSize: "14px", fontWeight: "bold" }}>{star} ★</span>
-                  <div className="progress flex-grow-1" style={{ height: "10px" }}>
-                    <div
-                      className="progress-bar bg-warning"
-                      role="progressbar"
-                      style={{ width: `${pct}%` }}
-                    ></div>
-                  </div>
-                  <span className="small text-muted" style={{ width: "60px", textAlign: "right" }}>
-                    {count} ({pct}%)
-                  </span>
+            {!token ? (
+              <div className="alert alert-warning py-2 mb-0 small">
+                Please login to submit a review for this product.
+              </div>
+            ) : !isVerifiedBuyer ? (
+              <div className="alert alert-light border py-2 mb-0 small text-muted">
+                🔒 Only verified buyers with a delivered order can review this product.
+              </div>
+            ) : (
+              <div>
+                <div className="mb-3">
+                  <label className="form-label small fw-bold text-muted me-2">Your Rating:</label>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      style={{ fontSize: "22px", cursor: "pointer", color: star <= rating ? "#F59E0B" : "#D1D5DB" }}
+                      onClick={() => setRating(star)}
+                    >
+                      ★
+                    </span>
+                  ))}
                 </div>
-              );
-            })}
+
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control rounded-3 border-0 bg-light"
+                    placeholder="Write your review experience..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
+                </div>
+
+                <button className="btn btn-dark rounded-pill px-4" onClick={submitReview}>
+                  Submit Verified Review ✅
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* ADD REVIEW FORM */}
-      <div className="row justify-content-center">
-        <div className="col-12 col-md-8">
-          <h4 className="fw-bold">Write a Review</h4>
-
-          {!token ? (
-            <div className="alert alert-warning py-2 mb-3">
-              Please login to submit a review for this product.
-            </div>
-          ) : !isVerifiedBuyer ? (
-            <div className="alert alert-info py-2 mb-3 fw-semibold">
-              🔒 Only verified buyers with a delivered order can review this product.
-            </div>
-          ) : (
-            <div className="card p-3 shadow-sm border-0 mb-4">
-              <div className="mb-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span
-                    key={star}
-                    style={{
-                      fontSize: "24px",
-                      cursor: "pointer",
-                      color: star <= rating ? "gold" : "#ccc",
-                    }}
-                    onClick={() => setRating(star)}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-
-              <input
-                className="form-control mb-3"
-                placeholder="Share your experience with this item..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
-
-              <button className="btn btn-success rounded-pill px-4" onClick={submitReview}>
-                Submit Verified Review ✅
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <hr className="my-5" />
 
       {/* REVIEWS LIST */}
       <div className="row justify-content-center">
         <div className="col-12 col-md-8">
-          <div className="d-flex align-items-center justify-content-between mb-3">
-            <h4 className="fw-bold m-0">Customer Reviews ({reviews.length})</h4>
-
-            {/* Sort Dropdown */}
-            <div className="d-flex align-items-center gap-2">
-              <span className="small text-muted">Sort by:</span>
-              <select
-                className="form-select form-select-sm rounded-pill border-0 shadow-sm"
-                value={reviewSort}
-                onChange={handleSortChange}
-              >
-                <option value="newest">Newest First</option>
-                <option value="highest">Highest Rated</option>
-                <option value="lowest">Lowest Rated</option>
-              </select>
-            </div>
+          <div className="d-flex align-items-center justify-content-between mb-4">
+            <h4 className="fw-bold m-0 text-dark">Customer Reviews ({reviews.length})</h4>
+            <select
+              className="form-select form-select-sm rounded-pill w-auto border-0 shadow-sm"
+              value={reviewSort}
+              onChange={(e) => {
+                setReviewSort(e.target.value);
+                setReviewPage(1);
+                fetchReviews(e.target.value);
+              }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="highest">Highest Rated</option>
+              <option value="lowest">Lowest Rated</option>
+            </select>
           </div>
 
           {reviews.length === 0 ? (
-            <p className="text-muted">No reviews yet. Be the first to review!</p>
+            <p className="text-muted">No reviews yet for this product.</p>
           ) : (
             currentReviews.map((r) => (
-              <div key={r.id} className="card p-3 mb-3 shadow-sm border-0 rounded-3">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div className="d-flex align-items-center gap-2">
-                    <b className="fs-6">{r.username}</b>
-                    <span className="badge bg-success-subtle text-success border border-success rounded-pill" style={{ fontSize: "10px" }}>
-                      Verified Buyer ✔️
-                    </span>
-                  </div>
-                  <div style={{ color: "gold" }}>
-                    {"★".repeat(r.rating)}
-                    {"☆".repeat(5 - r.rating)}
-                  </div>
+              <div key={r.id} className="card border-0 shadow-sm p-4 mb-3 rounded-4 bg-white">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="fw-bold text-dark">{r.username}</span>
+                  <div className="text-warning">{"★".repeat(r.rating)}</div>
                 </div>
-
-                <p className="mt-2 mb-2 text-secondary">{r.comment}</p>
-
-                {(r.username === username || role === "ROLE_ADMIN") && (
-                  <div className="mt-2">
-                    {r.username === username && (
-                      <button
-                        className="btn btn-sm btn-warning me-2"
-                        onClick={() => editReview(r.id)}
-                      >
-                        Edit
-                      </button>
-                    )}
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => deleteReview(r.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
+                <p className="text-secondary small mb-0">{r.comment}</p>
               </div>
             ))
           )}
 
-          {/* Reviews Pagination */}
-          <Pagination
-            currentPage={reviewPage}
-            totalPages={totalReviewPages}
-            onPageChange={(p) => setReviewPage(p)}
-          />
+          {reviews.length > 0 && (
+            <Pagination
+              currentPage={reviewPage}
+              totalPages={totalReviewPages}
+              onPageChange={(p) => setReviewPage(p)}
+            />
+          )}
         </div>
       </div>
 
-      {/* CLICK TO ENLARGE MODAL */}
+      {/* ENLARGE PREVIEW MODAL */}
       {enlargedImage && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
           onClick={() => setEnlargedImage(null)}
         >
-          <div className="bg-white p-3 rounded text-center">
-            <h6 className="fw-bold mb-2">Uploaded Design Preview</h6>
+          <div className="bg-white p-4 rounded-4 text-center shadow-lg">
+            <h6 className="fw-bold mb-3">Custom Uploaded Artwork</h6>
             <img
               src={enlargedImage}
               alt="Enlarged design"
-              style={{ maxWidth: "80vw", maxHeight: "70vh", objectFit: "contain" }}
+              className="rounded-3 img-fluid mb-3"
+              style={{ maxHeight: "350px", objectFit: "contain" }}
             />
-            <div className="mt-3">
-              <button className="btn btn-secondary btn-sm" onClick={() => setEnlargedImage(null)}>
+            <div>
+              <button className="btn btn-secondary rounded-pill px-4" onClick={() => setEnlargedImage(null)}>
                 Close Preview
               </button>
             </div>

@@ -50,6 +50,7 @@ function Inventory() {
         quantity: newQty,
       })
       .then((res) => {
+        sessionStorage.removeItem("products_cache");
         toast.success(`Updated ${res.data.name} stock to ${newQty} ✅`);
         setProducts((prev) =>
           prev.map((p) => (p.id === id ? { ...p, quantity: newQty } : p))

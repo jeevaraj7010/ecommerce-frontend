@@ -8,13 +8,13 @@ export function WishlistProvider({ children }) {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [wishlistIds, setWishlistIds] = useState(new Set());
+  const [authToken, setAuthToken] = useState(() => localStorage.getItem("token") || "");
 
-  const getToken = () => localStorage.getItem("token");
   const getRole = () => localStorage.getItem("role");
 
-  // Fetch wishlist from backend using fresh token
-  const fetchWishlist = useCallback(async () => {
-    const currentToken = getToken();
+  // Sync token and fetch fresh wishlist
+  const fetchWishlist = useCallback(async (tokenOverride) => {
+    const currentToken = tokenOverride !== undefined ? tokenOverride : localStorage.getItem("token");
     const currentRole = getRole();
 
     if (!currentToken || currentRole === "ROLE_ADMIN") {
@@ -43,20 +43,24 @@ export function WishlistProvider({ children }) {
     fetchWishlist();
 
     const handleAuthChange = () => {
-      fetchWishlist();
+      const freshToken = localStorage.getItem("token") || "";
+      setAuthToken(freshToken);
+      fetchWishlist(freshToken);
     };
 
     window.addEventListener("authChange", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
     return () => {
       window.removeEventListener("authChange", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
     };
   }, [fetchWishlist]);
 
-  // Optimistic Toggle Wishlist
+  // Toggle Wishlist with instant token check
   const toggleWishlist = async (product) => {
-    const token = getToken();
+    const activeToken = localStorage.getItem("token") || authToken;
 
-    if (!token) {
+    if (!activeToken) {
       toast.warning("Please login to save items to your wishlist ⚠️");
       return;
     }
@@ -88,10 +92,10 @@ export function WishlistProvider({ children }) {
       const res = await axios.post(
         `https://ecommerce-backend-1-tsra.onrender.com/api/wishlist/${product.id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${activeToken}` } }
       );
 
-      const serverCount = res.data.count;
+      const serverCount = res.data?.count;
       if (serverCount !== undefined) {
         setWishlistCount(serverCount);
       }
@@ -103,7 +107,7 @@ export function WishlistProvider({ children }) {
       }
     } catch (err) {
       // Rollback on failure
-      fetchWishlist();
+      fetchWishlist(activeToken);
       toast.error("Failed to update wishlist on server ❌");
     }
   };
@@ -111,13 +115,13 @@ export function WishlistProvider({ children }) {
   const isWishlisted = (productId) => wishlistIds.has(productId);
 
   const removeFromWishlist = async (productId) => {
-    const token = getToken();
-    if (!token) return;
+    const activeToken = localStorage.getItem("token") || authToken;
+    if (!activeToken) return;
 
     try {
       const res = await axios.delete(
         `https://ecommerce-backend-1-tsra.onrender.com/api/wishlist/${productId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${activeToken}` } }
       );
       setWishlistItems((prev) => prev.filter((p) => p.id !== productId));
       setWishlistIds((prev) => {
@@ -125,7 +129,7 @@ export function WishlistProvider({ children }) {
         next.delete(productId);
         return next;
       });
-      if (res.data.count !== undefined) {
+      if (res.data?.count !== undefined) {
         setWishlistCount(res.data.count);
       }
     } catch (err) {
@@ -142,6 +146,7 @@ export function WishlistProvider({ children }) {
         toggleWishlist,
         removeFromWishlist,
         fetchWishlist,
+        authToken,
       }}
     >
       {children}

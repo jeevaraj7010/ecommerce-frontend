@@ -33,6 +33,7 @@ function AddProduct() {
         }
       );
 
+      sessionStorage.removeItem("products_cache");
       alert("Product Added Successfully");
       console.log(response.data);
 

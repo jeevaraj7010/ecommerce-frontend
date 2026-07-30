@@ -4,37 +4,36 @@ import axios from "axios";
 export const ProductContext = createContext();
 
 const CACHE_KEY = "products_cache";
-const CACHE_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 
 export function ProductProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Invalidate cache helper
+  const clearProductCache = useCallback(() => {
+    sessionStorage.removeItem(CACHE_KEY);
+    setProducts([]);
+  }, []);
+
   const fetchProducts = useCallback(async (forceRefresh = false) => {
-    // Step 1: Check cache if not forcing refresh
+    // Step 1: Check sessionStorage cache if not forcing refresh
     if (!forceRefresh) {
       try {
         const cachedStr = sessionStorage.getItem(CACHE_KEY);
         if (cachedStr) {
           const cachedData = JSON.parse(cachedStr);
-          const now = Date.now();
-          if (
-            cachedData &&
-            Array.isArray(cachedData.products) &&
-            cachedData.timestamp &&
-            now - cachedData.timestamp < CACHE_EXPIRY_MS
-          ) {
+          if (cachedData && Array.isArray(cachedData.products) && cachedData.products.length > 0) {
             setProducts(cachedData.products);
             setLoading(false);
             return;
           }
         }
       } catch (e) {
-        console.error("Error reading products cache from sessionStorage:", e);
+        console.error("Error reading products_cache from sessionStorage:", e);
       }
     }
 
-    // Step 2: Call backend API if cache is missing, expired, or forceRefresh requested
+    // Step 2: Fetch products from backend when cache missing or forceRefresh requested
     setLoading(true);
     try {
       const [productRes, ratingRes] = await Promise.all([
@@ -54,16 +53,19 @@ export function ProductProvider({ children }) {
 
       setProducts(updatedProducts);
 
-      // Store in sessionStorage
-      sessionStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          products: updatedProducts,
-          timestamp: Date.now(),
-        })
-      );
+      // Save to sessionStorage ONLY if request succeeded and returned valid data
+      if (productRes.status === 200 && Array.isArray(updatedProducts)) {
+        sessionStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            products: updatedProducts,
+            updatedAt: Date.now(),
+          })
+        );
+      }
     } catch (err) {
-      console.error("Error fetching products from backend:", err);
+      console.error("Error fetching products from backend - cache withheld:", err);
+      // DO NOT cache failed API responses
     } finally {
       setLoading(false);
     }
@@ -75,7 +77,18 @@ export function ProductProvider({ children }) {
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+
+    const handleAuthChange = () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        // Clear cache on logout
+        clearProductCache();
+      }
+    };
+
+    window.addEventListener("authChange", handleAuthChange);
+    return () => window.removeEventListener("authChange", handleAuthChange);
+  }, [fetchProducts, clearProductCache]);
 
   return (
     <ProductContext.Provider
@@ -84,6 +97,7 @@ export function ProductProvider({ children }) {
         loading,
         fetchProducts,
         refreshProducts,
+        clearProductCache,
         setProducts,
       }}
     >

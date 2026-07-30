@@ -28,122 +28,176 @@ function Cart() {
   };
 
   return (
-    <div className="container mt-5 py-3">
-      <h2 className="text-center mb-4 fw-bold">Your Cart 🛒</h2>
+    <div className="container py-5" style={{ minHeight: "80vh" }}>
+      <div className="d-flex align-items-center justify-content-between mb-4">
+        <div>
+          <h2 className="fw-extrabold text-dark m-0" style={{ letterSpacing: "-0.5px" }}>
+            Shopping Cart 🛒
+          </h2>
+          <p className="text-muted small mb-0">Review your apparel & custom print items</p>
+        </div>
+
+        <span className="badge rounded-pill bg-dark px-3 py-2 text-white fw-semibold">
+          {cartItems.length} {cartItems.length === 1 ? "Item" : "Items"}
+        </span>
+      </div>
 
       {cartItems.length === 0 ? (
-        <div className="text-center py-5">
-          <p className="fs-5 text-muted">No items added yet.</p>
-
-          <button
-            className="btn btn-dark mt-2"
-            onClick={() => navigate("/products")}
-          >
-            Explore Clothing Categories
-          </button>
+        <div className="card border-0 shadow-sm p-5 text-center rounded-5 bg-white my-4">
+          <div className="fs-1 mb-2 text-muted">🛍️</div>
+          <h4 className="fw-bold mb-2">Your Bag is Empty</h4>
+          <p className="text-muted mb-4 mx-auto" style={{ maxWidth: "400px" }}>
+            Explore our latest hoodies, t-shirts, oversized collections, and custom printing studio.
+          </p>
+          <div>
+            <button
+              className="btn btn-dark rounded-pill px-5 py-2.5 fw-semibold shadow-sm"
+              onClick={() => navigate("/products")}
+            >
+              Explore Collection
+            </button>
+          </div>
         </div>
       ) : (
-        <>
-          {cartItems.map((item, index) => (
-            <div key={index} className="card p-3 mb-3 shadow-sm border-0">
-              <div className="row align-items-center g-3">
-                <div className="col-12 col-md-3 d-flex align-items-center gap-2">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.name}
-                    className="img-fluid rounded"
-                    style={{ maxHeight: "100px", objectFit: "cover" }}
-                  />
-
-                  {/* 🎨 CUSTOM DESIGN THUMBNAIL */}
-                  {item.customImageUrl && (
-                    <div className="text-center ms-2">
-                      <span className="badge bg-primary d-block mb-1">Your Design</span>
+        <div className="row g-4">
+          {/* CART ITEMS LIST */}
+          <div className="col-12 col-lg-8">
+            <div className="d-flex flex-column gap-3">
+              {cartItems.map((item, index) => (
+                <div key={index} className="card border-0 shadow-sm p-4 rounded-4 bg-white">
+                  <div className="row align-items-center g-3">
+                    {/* Image & Custom Thumbnail */}
+                    <div className="col-12 col-sm-3 d-flex align-items-center gap-2">
                       <img
-                        src={item.customImageUrl}
-                        alt="Custom design"
-                        className="custom-design-preview rounded border cursor-pointer"
-                        style={{ width: "55px", height: "55px", objectFit: "cover", cursor: "pointer" }}
-                        onClick={() => setEnlargedImage(item.customImageUrl)}
-                        title="Click to Enlarge"
+                        src={item.imageUrl || "https://picsum.photos/200"}
+                        alt={item.name}
+                        className="rounded-3 shadow-sm"
+                        style={{ width: "80px", height: "80px", objectFit: "cover" }}
                       />
+
+                      {item.customImageUrl && (
+                        <div className="text-center position-relative">
+                          <img
+                            src={item.customImageUrl}
+                            alt="Custom print design"
+                            className="rounded-3 border border-primary cursor-pointer shadow-sm"
+                            style={{ width: "56px", height: "56px", objectFit: "cover", cursor: "pointer" }}
+                            onClick={() => setEnlargedImage(item.customImageUrl)}
+                            title="Click to Enlarge Custom Design"
+                          />
+                          <small className="badge bg-primary d-block mt-1" style={{ fontSize: "9px" }}>
+                            Custom Print
+                          </small>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                <div className="col-12 col-md-4">
-                  <h5 className="fw-bold mb-1">{item.name}</h5>
-                  <p className="text-muted small mb-0">{item.description}</p>
-                </div>
+                    {/* Item Details */}
+                    <div className="col-12 col-sm-4">
+                      <h6 className="fw-bold text-dark mb-1">{item.name}</h6>
+                      {item.customText && (
+                        <span className="badge bg-light text-dark border px-2 py-1 mb-1 d-inline-block small">
+                          Text: "{item.customText}"
+                        </span>
+                      )}
+                      <p className="text-muted small mb-0 text-truncate">{item.description}</p>
+                    </div>
 
-                <div className="col-6 col-md-2 text-center">
-                  <div className="d-inline-flex align-items-center border rounded px-2 py-1 bg-light">
-                    <button
-                      className="btn btn-sm btn-link text-dark text-decoration-none px-2 fw-bold"
-                      onClick={() => decreaseQty(index)}
-                    >
-                      -
-                    </button>
-                    <span className="px-2 fw-bold">{item.quantity}</span>
-                    <button
-                      className="btn btn-sm btn-link text-dark text-decoration-none px-2 fw-bold"
-                      onClick={() => increaseQty(index)}
-                    >
-                      +
-                    </button>
+                    {/* Quantity Adjustment */}
+                    <div className="col-6 col-sm-2 text-center">
+                      <div className="d-inline-flex align-items-center border rounded-pill px-3 py-1 bg-light">
+                        <button
+                          className="btn btn-sm btn-link text-dark text-decoration-none p-0 fw-bold fs-6"
+                          onClick={() => decreaseQty(index)}
+                        >
+                          −
+                        </button>
+                        <span className="px-3 fw-bold text-dark">{item.quantity}</span>
+                        <button
+                          className="btn btn-sm btn-link text-dark text-decoration-none p-0 fw-bold fs-6"
+                          onClick={() => increaseQty(index)}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Price & Remove */}
+                    <div className="col-6 col-sm-3 text-end">
+                      <h5 className="fw-extrabold text-dark mb-1">
+                        ₹{item.price * item.quantity}
+                      </h5>
+                      <button
+                        className="btn btn-link text-danger text-decoration-none p-0 small fw-semibold"
+                        onClick={() => removeFromCart(index)}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="col-6 col-md-3 text-end">
-                  <h5 className="fw-bold text-success mb-2">
-                    ₹{item.price * item.quantity}
-                  </h5>
-
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={() => removeFromCart(index)}
-                  >
-                    Remove ❌
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <div className="card p-4 mt-4 shadow-sm border-0 bg-light text-end">
-            <h4 className="fw-bold">Total: ₹{getTotal()}</h4>
-
-            <div className="mt-3">
-              <button
-                className="btn btn-outline-dark me-2"
-                onClick={() => navigate("/products")}
-              >
-                Continue Shopping
-              </button>
-
-              <button className="btn btn-success btn-lg" onClick={handleCheckout}>
-                Proceed to Checkout 💳
-              </button>
+              ))}
             </div>
           </div>
-        </>
+
+          {/* SUMMARY SIDEBAR */}
+          <div className="col-12 col-lg-4">
+            <div className="card border-0 shadow-sm p-4 rounded-4 bg-white sticky-top" style={{ top: "100px" }}>
+              <h5 className="fw-extrabold text-dark mb-3">Order Summary</h5>
+
+              <div className="d-flex justify-content-between mb-2 text-secondary">
+                <span>Subtotal</span>
+                <span className="fw-semibold text-dark">₹{getTotal()}</span>
+              </div>
+
+              <div className="d-flex justify-content-between mb-3 text-secondary">
+                <span>Estimated Shipping</span>
+                <span className="text-success fw-semibold">FREE</span>
+              </div>
+
+              <hr />
+
+              <div className="d-flex justify-content-between mb-4">
+                <span className="fw-bold fs-5 text-dark">Total</span>
+                <span className="fw-extrabold fs-4 text-dark">₹{getTotal()}</span>
+              </div>
+
+              <div className="d-grid gap-2">
+                <button
+                  className="btn btn-dark rounded-pill py-3 fw-bold shadow-sm"
+                  onClick={handleCheckout}
+                >
+                  Proceed to Checkout 💳
+                </button>
+
+                <button
+                  className="btn btn-outline-dark rounded-pill py-2.5 fw-semibold"
+                  onClick={() => navigate("/products")}
+                >
+                  Continue Shopping
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* CLICK TO ENLARGE MODAL */}
+      {/* ENLARGE PREVIEW MODAL */}
       {enlargedImage && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
           onClick={() => setEnlargedImage(null)}
         >
-          <div className="bg-white p-3 rounded text-center">
-            <h6 className="fw-bold mb-2">Custom Design Preview</h6>
+          <div className="bg-white p-4 rounded-4 text-center shadow-lg" style={{ maxWidth: "500px" }}>
+            <h6 className="fw-bold mb-3">Custom Uploaded Artwork</h6>
             <img
               src={enlargedImage}
-              alt="Enlarged design"
-              style={{ maxWidth: "80vw", maxHeight: "70vh", objectFit: "contain" }}
+              alt="Enlarged artwork"
+              className="rounded-3 img-fluid mb-3"
+              style={{ maxHeight: "350px", objectFit: "contain" }}
             />
-            <div className="mt-3">
-              <button className="btn btn-secondary btn-sm" onClick={() => setEnlargedImage(null)}>
+            <div>
+              <button className="btn btn-secondary rounded-pill px-4" onClick={() => setEnlargedImage(null)}>
                 Close Preview
               </button>
             </div>

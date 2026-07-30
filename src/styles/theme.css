@@ -1,11 +1,16 @@
 :root {
-  --primary: #0f172a;
-  --accent: #22c55e;
-  --bg: #f8fafc;
-  --card: #ffffff;
+  --primary-bg: #F8F8F8;
+  --card-bg: #FFFFFF;
+  --primary-text: #111827;
+  --accent-titanium: #8E8E93;
+  --accent-purple: #8B5CF6;
+  --accent-green: #22C55E;
+  --accent-orange: #F59E0B;
+  --accent-red: #EF4444;
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
-  background: var(--bg);
+  font-family: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--primary-bg);
+  color: var(--primary-text);
 }
