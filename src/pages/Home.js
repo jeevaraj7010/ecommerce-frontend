@@ -1,10 +1,5 @@
-import React, { useContext } from "react";
+import React from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ProductContext } from "../context/ProductContext";
-import { WishlistContext } from "../context/WishlistContext";
-import { CartContext } from "./CartContext";
-import { toast } from "react-toastify";
-import SkeletonProductCard from "../components/SkeletonProductCard";
 
 const CATEGORIES = [
   { name: "Hoodies", image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80", count: "12+ Items" },
@@ -41,13 +36,6 @@ const REVIEWS = [
 
 function Home() {
   const navigate = useNavigate();
-  const { products, loading } = useContext(ProductContext);
-  const { isWishlisted, toggleWishlist } = useContext(WishlistContext);
-  const { addToCart } = useContext(CartContext);
-  const role = localStorage.getItem("role");
-
-  const trendingProducts = products.slice(0, 4);
-  const newArrivals = products.slice(4, 8);
 
   return (
     <div style={{ backgroundColor: "#F8F8F8", overflowX: "hidden" }}>
@@ -103,165 +91,7 @@ function Home() {
         </div>
       </section>
 
-      {/* 🔥 1. TRENDING PRODUCTS */}
-      <section className="py-5">
-        <div className="container py-3">
-          <div className="d-flex justify-content-between align-items-end mb-4">
-            <div>
-              <span className="text-uppercase text-muted text-xs fw-bold tracking-wider d-block">CURATED SELECTION</span>
-              <h2 className="fw-bold m-0 text-dark" style={{ letterSpacing: "-0.5px" }}>Trending Products 🔥</h2>
-            </div>
-            <button className="btn btn-link text-dark fw-semibold text-decoration-none p-0" onClick={() => navigate("/products")}>
-              View All Products →
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="row g-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div className="col-6 col-md-3" key={i}><SkeletonProductCard /></div>
-              ))}
-            </div>
-          ) : (
-            <div className="row g-4">
-              {trendingProducts.map((p) => {
-                const isOut = p.quantity <= 0;
-                const wishlisted = isWishlisted(p.id);
-
-                return (
-                  <div className="col-6 col-md-3" key={p.id}>
-                    <div
-                      className="card border-0 shadow-sm p-3 h-100 apple-card-hover position-relative"
-                      style={{ cursor: "pointer", borderRadius: "20px" }}
-                      onClick={() => navigate(`/product/${p.id}`)}
-                    >
-                      {role !== "ROLE_ADMIN" && (
-                        <button
-                          className="position-absolute top-0 end-0 m-3 btn btn-light btn-sm rounded-circle shadow-sm border-0 z-2"
-                          style={{ width: "34px", height: "34px", lineHeight: "1" }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleWishlist(p);
-                          }}
-                        >
-                          <span style={{ fontSize: "16px", color: wishlisted ? "red" : "#aaa" }}>
-                            {wishlisted ? "❤️" : "🤍"}
-                          </span>
-                        </button>
-                      )}
-
-                      <div className="img-zoom-container mb-3" style={{ height: "200px" }}>
-                        <img src={p.imageUrl || "https://picsum.photos/300"} alt={p.name} loading="lazy" />
-                      </div>
-
-                      <h6 className="fw-bold text-truncate mb-1">{p.name}</h6>
-                      <div className="d-flex align-items-center justify-content-between mt-2">
-                        <span className="fw-bold text-dark fs-5">₹{p.price}</span>
-                        <div className="small text-warning">
-                          ★ <span className="text-dark fw-semibold">{p.rating ? p.rating.toFixed(1) : "5.0"}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-3">
-                        <button
-                          className={`btn btn-sm w-100 ${isOut ? "btn-secondary" : "btn-dark"} rounded-pill py-2`}
-                          disabled={isOut}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isOut) {
-                              addToCart(p);
-                              toast.success(`${p.name} added to cart 🛒`);
-                            }
-                          }}
-                        >
-                          {isOut ? "OUT OF STOCK" : "Add To Cart"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 🚀 2. NEW ARRIVALS */}
-      <section className="py-5 bg-white">
-        <div className="container py-3">
-          <div className="d-flex justify-content-between align-items-end mb-4">
-            <div>
-              <span className="text-uppercase text-muted text-xs fw-bold tracking-wider d-block">FRESH DROPS</span>
-              <h2 className="fw-bold m-0 text-dark" style={{ letterSpacing: "-0.5px" }}>New Arrivals ✨</h2>
-            </div>
-            <button className="btn btn-link text-dark fw-semibold text-decoration-none p-0" onClick={() => navigate("/products")}>
-              Explore Collection →
-            </button>
-          </div>
-
-          <div className="row g-4">
-            {newArrivals.map((p) => {
-              const isOut = p.quantity <= 0;
-              const wishlisted = isWishlisted(p.id);
-
-              return (
-                <div className="col-6 col-md-3" key={p.id}>
-                  <div
-                    className="card border-0 shadow-sm p-3 h-100 apple-card-hover position-relative"
-                    style={{ cursor: "pointer", borderRadius: "20px" }}
-                    onClick={() => navigate(`/product/${p.id}`)}
-                  >
-                    {role !== "ROLE_ADMIN" && (
-                      <button
-                        className="position-absolute top-0 end-0 m-3 btn btn-light btn-sm rounded-circle shadow-sm border-0 z-2"
-                        style={{ width: "34px", height: "34px", lineHeight: "1" }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleWishlist(p);
-                        }}
-                      >
-                        <span style={{ fontSize: "16px", color: wishlisted ? "red" : "#aaa" }}>
-                          {wishlisted ? "❤️" : "🤍"}
-                        </span>
-                      </button>
-                    )}
-
-                    <div className="img-zoom-container mb-3" style={{ height: "200px" }}>
-                      <img src={p.imageUrl || "https://picsum.photos/300"} alt={p.name} loading="lazy" />
-                    </div>
-
-                    <h6 className="fw-bold text-truncate mb-1">{p.name}</h6>
-                    <div className="d-flex align-items-center justify-content-between mt-2">
-                      <span className="fw-bold text-dark fs-5">₹{p.price}</span>
-                      <div className="small text-warning">
-                        ★ <span className="text-dark fw-semibold">{p.rating ? p.rating.toFixed(1) : "5.0"}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <button
-                        className={`btn btn-sm w-100 ${isOut ? "btn-secondary" : "btn-dark"} rounded-pill py-2`}
-                        disabled={isOut}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!isOut) {
-                            addToCart(p);
-                            toast.success(`${p.name} added to cart 🛒`);
-                          }
-                        }}
-                      >
-                        {isOut ? "OUT OF STOCK" : "Add To Cart"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 🏷️ 3. CATEGORIES */}
+      {/* 🏷️ SHOP BY CATEGORY */}
       <section className="py-5">
         <div className="container py-3">
           <div className="text-center mb-5">
@@ -292,7 +122,7 @@ function Home() {
         </div>
       </section>
 
-      {/* ✨ 4. CUSTOM DESIGN SECTION */}
+      {/* ✨ CUSTOM DESIGN SECTION */}
       <section className="py-5 bg-dark text-white position-relative">
         <div className="container py-4">
           <div className="row align-items-center g-5">
@@ -327,7 +157,7 @@ function Home() {
         </div>
       </section>
 
-      {/* ⭐ 5. CUSTOMER REVIEWS */}
+      {/* ⭐ CUSTOMER REVIEWS */}
       <section className="py-5">
         <div className="container py-3">
           <div className="text-center mb-5">
@@ -355,7 +185,7 @@ function Home() {
         </div>
       </section>
 
-      {/* 🌟 6. WHY CHOOSE HOODIFY? */}
+      {/* 🌟 WHY CHOOSE HOODIFY? */}
       <section className="py-5 bg-white">
         <div className="container py-4">
           <div className="text-center mb-5">
@@ -399,7 +229,7 @@ function Home() {
         </div>
       </section>
 
-      {/* 🖤 7. PREMIUM FOOTER */}
+      {/* 🖤 PREMIUM FOOTER */}
       <footer className="bg-dark text-white pt-5 pb-4">
         <div className="container">
           <div className="row g-4 mb-4">
