@@ -1,94 +1,115 @@
-/* Custom Fashion Styles */
+/* ===========================
+   PRODUCTS PAGE
+=========================== */
 
-.shop-container {
-  font-family: 'Inter', -apple-system, sans-serif;
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.underline {
-  width: 50px;
-  height: 3px;
-  background-color: #000;
-  margin-top: 10px;
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
 }
 
-.product-card {
-  border: none;
-  background: transparent;
-  transition: transform 0.3s ease;
-}
-.product-card {
-  transition: transform 0.2s ease;
-}
+/* ===========================
+   PRODUCT CARD
+=========================== */
 
-.product-card:hover {
-  transform: scale(1.05);
-}
-
-/* Image Styling */
-.image-container {
-  position: relative;
+.product-card,
+.apple-card-hover {
+  border-radius: 20px;
   overflow: hidden;
-  border-radius: 12px; /* Soft rounded corners */
-  aspect-ratio: 3 / 4; /* Perfect for clothing */
+  transition: all 0.25s ease;
+  background: #fff;
 }
 
-.image-container img {
+.product-card:hover,
+.apple-card-hover:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* ===========================
+   IMAGE CONTAINER
+=========================== */
+
+.img-zoom-container {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
+  height: 280px;
+  background: #f8f8f8;
+  border-radius: 16px;
+  overflow: hidden;
 
-/* Hover Effect */
-.product-card:hover img {
-  transform: scale(1.08);
-}
-
-.hover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
 }
 
-.product-card:hover .hover-overlay {
-  opacity: 1;
+/* IMPORTANT */
+
+.img-zoom-container img {
+  width: 100% !important;
+  height: 100% !important;
+
+  object-fit: contain !important;
+  object-position: center center !important;
+
+  display: block !important;
+
+  max-width: 100%;
+  max-height: 100%;
+
+  transition: transform .35s ease;
 }
 
-/* Typography */
-.ls-1 {
-  letter-spacing: 1px;
+/* Slight hover */
+
+.product-card:hover .img-zoom-container img,
+.apple-card-hover:hover .img-zoom-container img {
+  transform: scale(1.03);
 }
+
+/* ===========================
+   PRODUCT TITLE
+=========================== */
 
 .product-title {
-  font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 15px;
+  font-weight: 600;
   color: #222;
-}
-.card:hover {
-  transform: scale(1.03);
-  transition: 0.2s;
-  cursor: pointer;
+  margin-bottom: 4px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-h6 {
-  font-size: 14px;
-}
+/* ===========================
+   PRICE
+=========================== */
+
 .product-price {
-  font-size: 1.1rem;
-}
-.product-card {
-  transition: 0.3s;
-  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
 }
 
-.product-card:hover {
-  transform: translateY(-6px);
+/* ===========================
+   BUTTONS
+=========================== */
+
+.product-card .btn {
+  border-radius: 999px;
+}
+
+/* ===========================
+   MOBILE
+=========================== */
+
+@media (max-width:768px) {
+
+  .img-zoom-container {
+    height: 220px;
+  }
+
 }

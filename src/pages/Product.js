@@ -109,11 +109,10 @@ function Products() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                className={`btn btn-sm rounded-pill px-3 py-2 text-nowrap transition-all ${
-                  selectedCategory === cat
+                className={`btn btn-sm rounded-pill px-3 py-2 text-nowrap transition-all ${selectedCategory === cat
                     ? "btn-dark fw-bold shadow-sm"
                     : "btn-outline-secondary bg-white text-dark border-0 shadow-sm"
-                }`}
+                  }`}
                 onClick={() => handleCategorySelect(cat)}
               >
                 {cat}
@@ -194,7 +193,7 @@ function Products() {
                   )}
 
                   {/* Image Zoom Container */}
-                  <div className="img-zoom-container mb-3" style={{ height: "200px" }}>
+                  <div className="img-zoom-container mb-3">
                     <img
                       src={p.imageUrl || "https://picsum.photos/300"}
                       alt={p.name}
@@ -222,9 +221,8 @@ function Products() {
 
                     {/* STRICT STOCK RULE: ONLY SHOW OUT OF STOCK IF QUANTITY <= 0 */}
                     <button
-                      className={`btn btn-sm w-100 rounded-pill py-2 fw-semibold ${
-                        isOut ? "btn-secondary" : "btn-dark"
-                      }`}
+                      className={`btn btn-sm w-100 rounded-pill py-2 fw-semibold ${isOut ? "btn-secondary" : "btn-dark"
+                        }`}
                       disabled={isOut}
                       onClick={(e) => {
                         e.stopPropagation();
