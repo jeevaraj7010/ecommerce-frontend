@@ -299,12 +299,20 @@ function ProductDetails() {
         {/* PRODUCT & CUSTOM REAL-TIME PREVIEW IMAGE */}
         <div className="col-12 col-md-6">
           <div className="card border-0 shadow-sm p-4 text-center rounded-5 bg-white position-relative overflow-hidden">
-            <div className="position-relative d-inline-block mx-auto" style={{ maxWidth: "100%" }}>
+            <div className="position-relative d-flex align-items-center justify-content-center mx-auto rounded-4 overflow-hidden" style={{ width: "100%", minHeight: "360px", maxHeight: "480px", backgroundColor: "#F9FAFB" }}>
               <img
                 src={product.imageUrl || "https://picsum.photos/400"}
                 alt={product.name}
                 className="img-fluid rounded-4 shadow-sm"
-                style={{ maxHeight: "420px", objectFit: "cover" }}
+                style={{
+                  maxHeight: "450px",
+                  maxWidth: "100%",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  display: "block",
+                  margin: "0 auto"
+                }}
               />
             </div>
 
@@ -428,7 +436,7 @@ function ProductDetails() {
                         src={product.imageUrl || "https://picsum.photos/200"}
                         alt={product.name}
                         className="rounded-3 img-fluid border"
-                        style={{ maxHeight: "80px", objectFit: "cover" }}
+                        style={{ maxHeight: "80px", objectFit: "contain" }}
                       />
                       <small className="fw-bold text-dark d-block text-truncate mt-1" style={{ fontSize: "11px" }}>
                         {product.name}
