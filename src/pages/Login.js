@@ -57,7 +57,7 @@ function Login() {
       if (err.response?.status === 401) {
         toast.error("Invalid username or password ❌");
       } else {
-        toast.error("Server error. Try again ❌");
+        toast.error("Invalid username or password ❌");
       }
     } finally {
       setLoading(false);

@@ -469,7 +469,7 @@ function ProductDetails() {
             </div>
           )}
 
-          {/* ADD TO CART / OUT OF STOCK BUTTON (STRICT CUSTOMER STOCK HIDING) */}
+          {/* ADD TO CART / GO TO CART BUTTONS */}
           <div className="d-flex gap-3 mt-4">
             <button
               className={`btn btn-lg flex-grow-1 rounded-pill py-3 fw-bold ${
