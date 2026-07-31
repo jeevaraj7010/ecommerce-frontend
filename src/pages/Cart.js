@@ -1,7 +1,9 @@
 import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CartContext } from "./CartContext";
+import { WishlistContext } from "../context/WishlistContext";
 import { toast } from "react-toastify";
+import "./Cart.css";
 
 function Cart() {
   const {
@@ -12,7 +14,14 @@ function Cart() {
     getTotal,
   } = useContext(CartContext);
 
+  const { toggleWishlist, isWishlisted } = useContext(WishlistContext) || {
+    toggleWishlist: () => {},
+    isWishlisted: () => false,
+  };
+
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState(false);
   const navigate = useNavigate();
 
   const handleCheckout = () => {
@@ -27,177 +36,318 @@ function Cart() {
     navigate("/checkout");
   };
 
+  const handleApplyCoupon = (e) => {
+    e.preventDefault();
+    if (!couponCode.trim()) {
+      toast.info("Please enter a valid coupon code 🏷️");
+      return;
+    }
+    setCouponApplied(true);
+    toast.success(`Coupon "${couponCode.toUpperCase()}" applied successfully! 🎉`);
+  };
+
+  const totalAmount = getTotal();
+  const totalItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
-    <div className="container py-5" style={{ minHeight: "80vh" }}>
-      <div className="d-flex align-items-center justify-content-between mb-4">
-        <div>
-          <h2 className="fw-extrabold text-dark m-0" style={{ letterSpacing: "-0.5px" }}>
-            Shopping Cart 🛒
-          </h2>
-          <p className="text-muted small mb-0">Review your apparel & custom print items</p>
+    <div className="cart-page-wrapper">
+      <div className="container">
+        {/* PAGE HEADER */}
+        <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+          <div>
+            <h1 className="cart-header-title">Your Cart</h1>
+            <p className="cart-header-subtitle">
+              Review your apparel & custom print items before checkout
+            </p>
+          </div>
+
+          <div className="d-flex align-items-center gap-3">
+            <span className="cart-count-badge">
+              {totalItemsCount} {totalItemsCount === 1 ? "Item" : "Items"}
+            </span>
+          </div>
         </div>
 
-        <span className="badge rounded-pill bg-dark px-3 py-2 text-white fw-semibold">
-          {cartItems.length} {cartItems.length === 1 ? "Item" : "Items"}
-        </span>
-      </div>
-
-      {cartItems.length === 0 ? (
-        <div className="card border-0 shadow-sm p-5 text-center rounded-5 bg-white my-4">
-          <div className="fs-1 mb-2 text-muted">🛍️</div>
-          <h4 className="fw-bold mb-2">Your Bag is Empty</h4>
-          <p className="text-muted mb-4 mx-auto" style={{ maxWidth: "400px" }}>
-            Explore our latest hoodies, t-shirts, oversized collections, and custom printing studio.
-          </p>
-          <div>
+        {/* EMPTY CART STATE */}
+        {cartItems.length === 0 ? (
+          <div className="empty-cart-card">
+            <div className="empty-cart-icon" aria-hidden="true">
+              🛍️
+            </div>
+            <h2 className="empty-cart-title">Your cart feels empty</h2>
+            <p className="empty-cart-text">
+              Looks like you haven't added anything to your shopping bag yet. Explore our luxury collection and custom studio!
+            </p>
             <button
-              className="btn btn-dark rounded-pill px-5 py-2.5 fw-semibold shadow-sm"
+              className="btn-checkout-primary mx-auto"
+              style={{ maxWidth: "260px" }}
               onClick={() => navigate("/products")}
             >
-              Explore Collection
+              Continue Shopping →
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="row g-4">
-          {/* CART ITEMS LIST */}
-          <div className="col-12 col-lg-8">
-            <div className="d-flex flex-column gap-3">
-              {cartItems.map((item, index) => (
-                <div key={index} className="card border-0 shadow-sm p-4 rounded-4 bg-white">
-                  <div className="row align-items-center g-3">
-                    {/* Image & Custom Thumbnail */}
-                    <div className="col-12 col-sm-3 d-flex align-items-center gap-2">
-                      <img
-                        src={item.imageUrl || "https://picsum.photos/200"}
-                        alt={item.name}
-                        className="rounded-3 shadow-sm"
-                        style={{ width: "80px", height: "80px", objectFit: "cover" }}
-                      />
+        ) : (
+          <div className="row g-4">
+            {/* LEFT COLUMN: PRODUCT CARDS LIST (70%) */}
+            <div className="col-12 col-lg-8">
+              <div className="d-flex flex-column gap-3">
+                {cartItems.map((item, index) => {
+                  const customImg = item.customImageUrl || item.customImage;
+                  const itemWishlisted = isWishlisted(item.id);
 
-                      {item.customImageUrl && (
-                        <div className="text-center position-relative">
-                          <img
-                            src={item.customImageUrl}
-                            alt="Custom print design"
-                            className="rounded-3 border border-primary cursor-pointer shadow-sm"
-                            style={{ width: "56px", height: "56px", objectFit: "cover", cursor: "pointer" }}
-                            onClick={() => setEnlargedImage(item.customImageUrl)}
-                            title="Click to Enlarge Custom Design"
-                          />
-                          <small className="badge bg-primary d-block mt-1" style={{ fontSize: "9px" }}>
-                            Custom Print
-                          </small>
+                  return (
+                    <div key={index} className="cart-item-card">
+                      <div className="row align-items-center g-3">
+                        {/* LEFT: PRODUCT IMAGE (120x120) */}
+                        <div className="col-12 col-sm-auto">
+                          <div className="cart-image-wrapper">
+                            <img
+                              src={item.imageUrl || "https://picsum.photos/300"}
+                              alt={item.name}
+                              loading="lazy"
+                            />
+                            {customImg && (
+                              <div
+                                className="cart-custom-thumb"
+                                onClick={() => setEnlargedImage(customImg)}
+                                title="Click to view custom artwork preview"
+                              >
+                                <img src={customImg} alt="Custom artwork preview" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Item Details */}
-                    <div className="col-12 col-sm-4">
-                      <h6 className="fw-bold text-dark mb-1">{item.name}</h6>
-                      {item.customText && (
-                        <span className="badge bg-light text-dark border px-2 py-1 mb-1 d-inline-block small">
-                          Text: "{item.customText}"
-                        </span>
-                      )}
-                      <p className="text-muted small mb-0 text-truncate">{item.description}</p>
-                    </div>
+                        {/* MIDDLE: PRODUCT DETAILS & CONTROLS */}
+                        <div className="col-12 col-sm">
+                          <div className="d-flex align-items-start justify-content-between">
+                            <div>
+                              <h3 className="cart-product-title">{item.name}</h3>
+                              <div className="cart-product-meta">
+                                <span className="cart-meta-tag">
+                                  {item.category || "Hoodify Premium"}
+                                </span>
+                                <span className="text-muted small">₹{item.price} each</span>
+                              </div>
 
-                    {/* Quantity Adjustment */}
-                    <div className="col-6 col-sm-2 text-center">
-                      <div className="d-inline-flex align-items-center border rounded-pill px-3 py-1 bg-light">
-                        <button
-                          className="btn btn-sm btn-link text-dark text-decoration-none p-0 fw-bold fs-6"
-                          onClick={() => decreaseQty(index)}
-                        >
-                          −
-                        </button>
-                        <span className="px-3 fw-bold text-dark">{item.quantity}</span>
-                        <button
-                          className="btn btn-sm btn-link text-dark text-decoration-none p-0 fw-bold fs-6"
-                          onClick={() => increaseQty(index)}
-                        >
-                          +
-                        </button>
+                              {/* CUSTOM TEXT BADGE */}
+                              {item.customText && (
+                                <div className="mb-2">
+                                  <span className="cart-custom-text-badge">
+                                    ✨ Custom Text: "{item.customText}"
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* QUANTITY CONTROLS */}
+                          <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top border-light">
+                            <div className="cart-quantity-selector">
+                              <button
+                                type="button"
+                                className="cart-qty-btn"
+                                onClick={() => decreaseQty(index)}
+                                aria-label="Decrease quantity"
+                              >
+                                −
+                              </button>
+                              <span className="cart-qty-value">{item.quantity}</span>
+                              <button
+                                type="button"
+                                className="cart-qty-btn"
+                                onClick={() => increaseQty(index)}
+                                aria-label="Increase quantity"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            {/* ITEM SUBTOTAL & ACTION BUTTONS */}
+                            <div className="d-flex align-items-center gap-3">
+                              <span className="cart-item-subtotal">
+                                ₹{item.price * item.quantity}
+                              </span>
+
+                              {/* WISHLIST TOGGLE */}
+                              <button
+                                type="button"
+                                className="cart-action-btn"
+                                onClick={() => toggleWishlist(item)}
+                                title={
+                                  itemWishlisted
+                                    ? "Remove from Wishlist"
+                                    : "Move to Wishlist"
+                                }
+                                aria-label="Toggle Wishlist"
+                              >
+                                {itemWishlisted ? "❤️" : "🤍"}
+                              </button>
+
+                              {/* REMOVE ITEM */}
+                              <button
+                                type="button"
+                                className="cart-action-btn remove"
+                                onClick={() => removeFromCart(index)}
+                                title="Remove item"
+                                aria-label="Remove item from cart"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Price & Remove */}
-                    <div className="col-6 col-sm-3 text-end">
-                      <h5 className="fw-extrabold text-dark mb-1">
-                        ₹{item.price * item.quantity}
-                      </h5>
-                      <button
-                        className="btn btn-link text-danger text-decoration-none p-0 small fw-semibold"
-                        onClick={() => removeFromCart(index)}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
+              {/* ESTIMATED DELIVERY BADGE */}
+              <div className="mt-4 p-3 bg-white rounded-4 border d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div className="d-flex align-items-center gap-2 text-dark font-medium small">
+                  <span className="fs-5">🚚</span>
+                  <span>Estimated Delivery: <strong>2 - 4 Business Days</strong></span>
                 </div>
-              ))}
+                <span className="badge bg-success bg-opacity-10 text-success fw-semibold px-3 py-1.5 rounded-pill">
+                  FREE Express Delivery
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* SUMMARY SIDEBAR */}
-          <div className="col-12 col-lg-4">
-            <div className="card border-0 shadow-sm p-4 rounded-4 bg-white sticky-top" style={{ top: "100px" }}>
-              <h5 className="fw-extrabold text-dark mb-3">Order Summary</h5>
+            {/* RIGHT COLUMN: STICKY ORDER SUMMARY (30%) */}
+            <div className="col-12 col-lg-4">
+              <div className="cart-summary-card">
+                <h2 className="cart-summary-title">Order Summary</h2>
 
-              <div className="d-flex justify-content-between mb-2 text-secondary">
-                <span>Subtotal</span>
-                <span className="fw-semibold text-dark">₹{getTotal()}</span>
-              </div>
+                <div className="cart-summary-row">
+                  <span>Subtotal ({totalItemsCount} items)</span>
+                  <span className="fw-bold text-dark">₹{totalAmount}</span>
+                </div>
 
-              <div className="d-flex justify-content-between mb-3 text-secondary">
-                <span>Estimated Shipping</span>
-                <span className="text-success fw-semibold">FREE</span>
-              </div>
+                <div className="cart-summary-row">
+                  <span>Delivery Fee</span>
+                  <span className="text-success fw-bold">FREE</span>
+                </div>
 
-              <hr />
+                <div className="cart-summary-row">
+                  <span>Estimated Taxes</span>
+                  <span className="text-muted">Included</span>
+                </div>
 
-              <div className="d-flex justify-content-between mb-4">
-                <span className="fw-bold fs-5 text-dark">Total</span>
-                <span className="fw-extrabold fs-4 text-dark">₹{getTotal()}</span>
-              </div>
+                {couponApplied && (
+                  <div className="cart-summary-row text-success">
+                    <span>Coupon Discount</span>
+                    <span className="fw-bold">-₹0</span>
+                  </div>
+                )}
 
-              <div className="d-grid gap-2">
+                <div className="cart-divider my-3"></div>
+
+                <div className="cart-summary-row total">
+                  <span>Total Amount</span>
+                  <span>₹{totalAmount}</span>
+                </div>
+
+                {/* COUPON CODE FORM */}
+                <form onSubmit={handleApplyCoupon} className="cart-coupon-wrapper">
+                  <input
+                    type="text"
+                    className="cart-coupon-input"
+                    placeholder="Enter Coupon Code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                  />
+                  <button type="submit" className="btn-coupon-apply">
+                    Apply
+                  </button>
+                </form>
+
+                {/* CHECKOUT BUTTON */}
                 <button
-                  className="btn btn-dark rounded-pill py-3 fw-bold shadow-sm"
+                  type="button"
+                  className="btn-checkout-primary mb-3"
                   onClick={handleCheckout}
                 >
-                  Proceed to Checkout 💳
+                  Proceed to Checkout →
                 </button>
 
                 <button
-                  className="btn btn-outline-dark rounded-pill py-2.5 fw-semibold"
+                  type="button"
+                  className="btn btn-outline-dark w-100 rounded-pill py-2.5 fw-semibold text-sm"
                   onClick={() => navigate("/products")}
                 >
                   Continue Shopping
                 </button>
+
+                {/* TRUST BADGES GRID */}
+                <div className="cart-trust-grid">
+                  <div className="cart-trust-badge">
+                    <span className="cart-trust-icon">🛡️</span>
+                    <span>Secure Checkout</span>
+                  </div>
+                  <div className="cart-trust-badge">
+                    <span className="cart-trust-icon">⚡</span>
+                    <span>Fast Delivery</span>
+                  </div>
+                  <div className="cart-trust-badge">
+                    <span className="cart-trust-icon">❤</span>
+                    <span>Money Back</span>
+                  </div>
+                  <div className="cart-trust-badge">
+                    <span className="cart-trust-icon">✓</span>
+                    <span>In Stock</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* MOBILE STICKY CHECKOUT BAR */}
+      {cartItems.length > 0 && (
+        <div className="cart-mobile-sticky-bar">
+          <div>
+            <div className="text-muted small">Total</div>
+            <div className="fw-extrabold fs-5 text-dark">₹{totalAmount}</div>
+          </div>
+          <button
+            type="button"
+            className="btn-checkout-primary"
+            style={{ width: "auto", padding: "0 28px", height: "46px" }}
+            onClick={handleCheckout}
+          >
+            Checkout →
+          </button>
         </div>
       )}
 
-      {/* ENLARGE PREVIEW MODAL */}
+      {/* ENLARGE ARTWORK MODAL */}
       {enlargedImage && (
         <div
-          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3 p-3"
           onClick={() => setEnlargedImage(null)}
+          style={{ zIndex: 1060 }}
         >
-          <div className="bg-white p-4 rounded-4 text-center shadow-lg" style={{ maxWidth: "500px" }}>
-            <h6 className="fw-bold mb-3">Custom Uploaded Artwork</h6>
+          <div
+            className="bg-white p-4 rounded-4 text-center shadow-lg"
+            style={{ maxWidth: "480px", width: "100%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="fw-bold mb-3 fs-5">Custom Artwork Preview</h3>
             <img
               src={enlargedImage}
-              alt="Enlarged artwork"
+              alt="Uploaded custom artwork"
               className="rounded-3 img-fluid mb-3"
               style={{ maxHeight: "350px", objectFit: "contain" }}
             />
             <div>
-              <button className="btn btn-secondary rounded-pill px-4" onClick={() => setEnlargedImage(null)}>
+              <button
+                type="button"
+                className="btn btn-dark rounded-pill px-4 py-2"
+                onClick={() => setEnlargedImage(null)}
+              >
                 Close Preview
               </button>
             </div>
