@@ -67,6 +67,11 @@ function ProductDetails() {
     }
   }, [id, username, fetchReviews]);
 
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80";
+  };
+
   if (!product) {
     return (
       <div className="container text-center py-5">
@@ -294,16 +299,19 @@ function ProductDetails() {
   );
 
   return (
-    <div className="container py-5">
-      <div className="row g-5 align-items-start">
+    <div className="container py-4 py-md-5 pb-5 mb-5 mb-md-0">
+      <div className="row g-4 g-md-5 align-items-start">
         {/* PRODUCT & CUSTOM REAL-TIME PREVIEW IMAGE */}
         <div className="col-12 col-md-6">
-          <div className="card border-0 shadow-sm p-4 text-center rounded-5 bg-white position-relative overflow-hidden">
-            <div className="position-relative d-flex align-items-center justify-content-center mx-auto rounded-4 overflow-hidden" style={{ width: "100%", minHeight: "360px", maxHeight: "480px", backgroundColor: "#F9FAFB" }}>
+          <div className="card border-0 shadow-sm p-3 p-md-4 text-center rounded-5 bg-white position-relative overflow-hidden">
+            <div
+              className="position-relative d-flex align-items-center justify-content-center mx-auto rounded-4 overflow-hidden"
+              style={{ width: "100%", minHeight: "260px", maxHeight: "480px", backgroundColor: "#F9FAFB" }}
+            >
               <img
-                src={product.imageUrl || "https://picsum.photos/400"}
+                src={product.imageUrl || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80"}
                 alt={product.name}
-                className="img-fluid rounded-4 shadow-sm"
+                className="img-fluid rounded-4 shadow-sm cursor-pointer"
                 style={{
                   maxHeight: "450px",
                   maxWidth: "100%",
@@ -313,17 +321,22 @@ function ProductDetails() {
                   display: "block",
                   margin: "0 auto"
                 }}
+                loading="lazy"
+                onError={handleImageError}
+                onClick={() => setEnlargedImage(product.imageUrl)}
+                title="Click to zoom image"
               />
             </div>
 
             {role !== "ROLE_ADMIN" && (
               <button
-                className="position-absolute top-0 end-0 m-4 btn btn-light rounded-circle shadow border-0 p-2 d-flex align-items-center justify-content-center"
-                style={{ width: "44px", height: "44px" }}
+                className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow border-0 p-2 d-flex align-items-center justify-content-center"
+                style={{ width: "40px", height: "40px" }}
                 onClick={() => toggleWishlist(product)}
                 title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                aria-label="Toggle Wishlist"
               >
-                <span style={{ fontSize: "20px", color: wishlisted ? "#EF4444" : "#aaa" }}>
+                <span style={{ fontSize: "18px", color: wishlisted ? "#EF4444" : "#aaa" }}>
                   {wishlisted ? "❤️" : "🤍"}
                 </span>
               </button>
@@ -336,8 +349,10 @@ function ProductDetails() {
           <span className="badge rounded-pill bg-dark text-white px-3 py-1.5 text-xs mb-2">
             {product.category || "Premium Apparel"}
           </span>
-          <h1 className="fw-extrabold text-dark mb-2" style={{ letterSpacing: "-1px" }}>{product.name}</h1>
-          <p className="text-secondary mb-3">{product.description}</p>
+          <h1 className="fw-extrabold text-dark mb-2 fs-3 fs-md-1" style={{ letterSpacing: "-0.5px" }}>
+            {product.name}
+          </h1>
+          <p className="text-secondary mb-3 small fs-md-6">{product.description}</p>
 
           <div className="d-flex align-items-center gap-3 mb-3">
             <div className="d-flex align-items-center text-warning fs-5">
@@ -347,17 +362,17 @@ function ProductDetails() {
             <span className="text-muted small">• {reviews.length} Reviews</span>
           </div>
 
-          <h2 className="fw-extrabold text-dark mb-4">₹{product.price}</h2>
+          <h2 className="fw-extrabold text-dark mb-4 fs-2">₹{product.price}</h2>
 
           {/* 🎨 CUSTOM PRODUCT SECTION */}
           {isCustomizable && (
-            <div className="card border-0 bg-light p-4 rounded-4 mb-4 shadow-sm">
+            <div className="card border-0 bg-light p-3 p-md-4 rounded-4 mb-4 shadow-sm">
               <h5 className="fw-bold text-dark mb-1">Customize Your Product ✨</h5>
               <p className="small text-muted mb-3">Upload your artwork and add personalized custom text.</p>
 
               {/* Drag and Drop Image Upload Zone */}
               <div
-                className={`border-2 border-dashed rounded-4 p-4 text-center bg-white transition-all ${
+                className={`border-2 border-dashed rounded-4 p-3 p-md-4 text-center bg-white transition-all ${
                   isDragging ? "border-primary bg-primary-subtle" : "border-gray-300"
                 }`}
                 onDrop={handleDrop}
@@ -366,8 +381,10 @@ function ProductDetails() {
                 style={{ cursor: "pointer" }}
               >
                 <div className="fs-2 mb-1">🖼️</div>
-                <h6 className="fw-bold mb-1">Drag & Drop Image Here</h6>
-                <p className="small text-muted mb-2">Supported: JPG, PNG, WEBP (Max 5 MB)</p>
+                <h6 className="fw-bold mb-1 text-sm">Drag & Drop Image Here</h6>
+                <p className="small text-muted mb-2" style={{ fontSize: "12px" }}>
+                  Supported: JPG, PNG, WEBP (Max 5 MB)
+                </p>
 
                 <label className="btn btn-outline-dark btn-sm rounded-pill px-4 cursor-pointer">
                   Browse File
@@ -396,14 +413,16 @@ function ProductDetails() {
                       src={customPreview || customImageUrls[0]}
                       alt="Uploaded preview"
                       className="rounded border"
-                      style={{ width: "50px", height: "50px", objectFit: "cover" }}
+                      style={{ width: "48px", height: "48px", objectFit: "cover" }}
                     />
                     <div>
                       <small className="fw-bold d-block text-dark">Custom Design Ready</small>
-                      <small className="text-success">✓ Verified format & size</small>
+                      <small className="text-success" style={{ fontSize: "11px" }}>
+                        ✓ Verified format & size
+                      </small>
                     </div>
                   </div>
-                  <button className="btn btn-sm btn-outline-danger rounded-circle" onClick={handleRemoveCustomImage}>
+                  <button className="btn btn-sm btn-outline-danger rounded-circle p-1" onClick={handleRemoveCustomImage}>
                     ✕
                   </button>
                 </div>
@@ -418,48 +437,57 @@ function ProductDetails() {
                   placeholder='Enter text to print (e.g. "HOODIFY 2026")'
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
+                  style={{ height: "44px", fontSize: "14px" }}
                 />
               </div>
 
               {/* PREMIUM DESIGN PREVIEW CARD */}
               {(customPreview || customImageUrls[0] || customText) && (
-                <div className="card border-0 bg-white p-3 rounded-4 mt-4 shadow-sm">
-                  <h6 className="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                <div className="card border-0 bg-white p-3 rounded-4 mt-3 shadow-sm">
+                  <h6 className="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between text-sm">
                     <span>✨ Design Preview</span>
                     <small className="badge bg-dark text-white fw-normal">Customization</small>
                   </h6>
 
-                  <div className="row align-items-center g-3">
-                    <div className="col-4 text-center">
-                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>Apparel</small>
+                  <div className="row align-items-center g-2 text-center">
+                    <div className="col-4">
+                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>
+                        Apparel
+                      </small>
                       <img
                         src={product.imageUrl || "https://picsum.photos/200"}
                         alt={product.name}
                         className="rounded-3 img-fluid border"
-                        style={{ maxHeight: "80px", objectFit: "contain" }}
+                        style={{ maxHeight: "70px", objectFit: "contain" }}
                       />
                       <small className="fw-bold text-dark d-block text-truncate mt-1" style={{ fontSize: "11px" }}>
                         {product.name}
                       </small>
                     </div>
 
-                    <div className="col-4 text-center">
-                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>Artwork</small>
+                    <div className="col-4">
+                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>
+                        Artwork
+                      </small>
                       {customPreview || customImageUrls[0] ? (
                         <img
                           src={customPreview || customImageUrls[0]}
                           alt="Uploaded artwork preview"
                           className="rounded-3 img-fluid border shadow-sm"
-                          style={{ maxHeight: "80px", objectFit: "contain" }}
+                          style={{ maxHeight: "70px", objectFit: "contain" }}
                         />
                       ) : (
-                        <div className="rounded-3 bg-light border p-2 text-muted small">No Image</div>
+                        <div className="rounded-3 bg-light border p-2 text-muted small" style={{ fontSize: "11px" }}>
+                          No Image
+                        </div>
                       )}
                     </div>
 
-                    <div className="col-4">
-                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>Custom Text</small>
-                      <p className="fw-bold text-dark bg-light p-2 rounded-3 border mb-0 small text-truncate">
+                    <div className="col-4 text-start">
+                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>
+                        Custom Text
+                      </small>
+                      <p className="fw-bold text-dark bg-light p-2 rounded-3 border mb-0 small text-truncate" style={{ fontSize: "12px" }}>
                         {customText ? `"${customText}"` : "None"}
                       </p>
                     </div>
@@ -469,8 +497,8 @@ function ProductDetails() {
             </div>
           )}
 
-          {/* ADD TO CART / GO TO CART BUTTONS */}
-          <div className="d-flex gap-3 mt-4">
+          {/* DESKTOP ADD TO CART / GO TO CART BUTTONS */}
+          <div className="d-none d-md-flex gap-3 mt-4">
             <button
               className={`btn btn-lg flex-grow-1 rounded-pill py-3 fw-bold ${
                 isOut ? "btn-secondary" : "btn-dark shadow"
@@ -528,6 +556,7 @@ function ProductDetails() {
                     placeholder="Write your review experience..."
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
+                    style={{ height: "46px" }}
                   />
                 </div>
 
@@ -544,7 +573,7 @@ function ProductDetails() {
       <div className="row justify-content-center">
         <div className="col-12 col-md-8">
           <div className="d-flex align-items-center justify-content-between mb-4">
-            <h4 className="fw-bold m-0 text-dark">Customer Reviews ({reviews.length})</h4>
+            <h4 className="fw-bold m-0 text-dark fs-5">Customer Reviews ({reviews.length})</h4>
             <select
               className="form-select form-select-sm rounded-pill w-auto border-0 shadow-sm"
               value={reviewSort}
@@ -584,14 +613,38 @@ function ProductDetails() {
         </div>
       </div>
 
+      {/* MOBILE STICKY BOTTOM ACTION BAR */}
+      <div className="d-flex d-md-none position-fixed bottom-0 start-0 w-100 bg-white p-3 border-top shadow-lg z-3 align-items-center justify-content-between gap-2" style={{ zIndex: 1030 }}>
+        <div>
+          <span className="small text-muted d-block" style={{ fontSize: "11px" }}>Price</span>
+          <span className="fw-extrabold text-dark fs-5">₹{product.price}</span>
+        </div>
+        <div className="d-flex gap-2">
+          <button
+            className={`btn btn-dark rounded-pill px-3 py-2 fw-bold text-xs ${isOut ? "btn-secondary" : ""}`}
+            disabled={isOut}
+            onClick={handleAddToCart}
+          >
+            {isOut ? "OUT OF STOCK" : "Add to Cart"}
+          </button>
+          <button
+            className="btn btn-outline-dark rounded-pill px-3 py-2 fw-bold text-xs"
+            onClick={() => navigate("/cart")}
+          >
+            Cart 🛒
+          </button>
+        </div>
+      </div>
+
       {/* ENLARGE PREVIEW MODAL */}
       {enlargedImage && (
         <div
-          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3 p-3"
+          style={{ zIndex: 1060 }}
           onClick={() => setEnlargedImage(null)}
         >
-          <div className="bg-white p-4 rounded-4 text-center shadow-lg">
-            <h6 className="fw-bold mb-3">Custom Uploaded Artwork</h6>
+          <div className="bg-white p-4 rounded-4 text-center shadow-lg" style={{ maxWidth: "480px", width: "100%" }}>
+            <h6 className="fw-bold mb-3">Product Image Preview</h6>
             <img
               src={enlargedImage}
               alt="Enlarged design"

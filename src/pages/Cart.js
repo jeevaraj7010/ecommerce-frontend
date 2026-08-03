@@ -61,6 +61,11 @@ function Cart() {
   const totalAmount = getTotal();
   const totalItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80";
+  };
+
   // Fetch available coupons from backend
   useEffect(() => {
     API.get("/api/coupons/available")
@@ -305,12 +310,13 @@ function Cart() {
                     <div key={index} className="cart-item-card">
                       <div className="row align-items-center g-3">
                         {/* LEFT: PRODUCT IMAGE */}
-                        <div className="col-12 col-sm-auto">
-                          <div className="cart-image-wrapper">
+                        <div className="col-12 col-sm-auto text-center text-sm-start">
+                          <div className="cart-image-wrapper mx-auto mx-sm-0">
                             <img
-                              src={item.imageUrl || "https://picsum.photos/300"}
+                              src={item.imageUrl || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80"}
                               alt={item.name}
                               loading="lazy"
+                              onError={handleImageError}
                             />
                             {customImg && (
                               <div
@@ -318,7 +324,7 @@ function Cart() {
                                 onClick={() => setEnlargedImage(customImg)}
                                 title="Click to view custom artwork preview"
                               >
-                                <img src={customImg} alt="Custom artwork preview" />
+                                <img src={customImg} alt="Custom artwork preview" onError={handleImageError} />
                               </div>
                             )}
                           </div>
@@ -347,8 +353,8 @@ function Cart() {
                             </div>
                           </div>
 
-                          {/* QUANTITY CONTROLS */}
-                          <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top border-light">
+                          {/* QUANTITY CONTROLS & ITEM SUBTOTAL */}
+                          <div className="d-flex align-items-center justify-content-between mt-3 pt-2 border-top border-light flex-wrap gap-2">
                             <div className="cart-quantity-selector">
                               <button
                                 type="button"
@@ -448,7 +454,7 @@ function Cart() {
                 <DeliveryCheck />
               </div>
 
-              {/* AVAILABLE COUPONS / OFFERS SECTION (APPLE GLASSMORPHISM CARDS) */}
+              {/* AVAILABLE COUPONS / OFFERS SECTION */}
               <div className="mt-4">
                 <h5 className="fw-extrabold text-dark mb-3">Available Offers 🎟️</h5>
                 <div className="row g-3">
@@ -469,6 +475,7 @@ function Cart() {
                             alt="Coupon Banner"
                             className="rounded-3 mb-2 w-100"
                             style={{ height: "90px", objectFit: "cover" }}
+                            onError={handleImageError}
                           />
                         )}
                         <div className="d-flex align-items-center justify-content-between mb-2">
@@ -509,7 +516,7 @@ function Cart() {
 
             {/* RIGHT COLUMN: STICKY ORDER SUMMARY (30%) */}
             <div className="col-12 col-lg-4">
-              <div className="cart-summary-card sticky-top" style={{ top: "90px" }}>
+              <div className="cart-summary-card">
                 <h2 className="cart-summary-title">Order Summary</h2>
 
                 <div className="cart-summary-row">
@@ -642,7 +649,7 @@ function Cart() {
           <button
             type="button"
             className="btn-checkout-primary"
-            style={{ width: "auto", padding: "0 28px", height: "46px" }}
+            style={{ width: "auto", padding: "0 24px", height: "44px", fontSize: "14px" }}
             onClick={handleCheckout}
           >
             Checkout →
@@ -668,6 +675,7 @@ function Cart() {
               alt="Uploaded custom artwork"
               className="rounded-3 img-fluid mb-3"
               style={{ maxHeight: "350px", objectFit: "contain" }}
+              onError={handleImageError}
             />
             <div>
               <button

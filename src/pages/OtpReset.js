@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useLocation } from "react-router-dom";
-import { toast } from "react-toastify"; // 🔥 ADD THIS
+import { Link, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
+import "../styles/auth.css";
 
 function OtpReset() {
   const location = useLocation();
@@ -10,8 +11,10 @@ function OtpReset() {
   const [email, setEmail] = useState(initialEmail);
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [timer, setTimer] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
   const startTimer = () => {
     setTimer(60);
@@ -27,7 +30,7 @@ function OtpReset() {
   };
 
   const sendOtp = async () => {
-    if (!email) return toast.warning("Enter email ⚠️"); // 🔥 REPLACED
+    if (!email.trim()) return toast.warning("Please enter email address ⚠️");
 
     try {
       await axios.post(
@@ -35,17 +38,18 @@ function OtpReset() {
         { email }
       );
 
-      toast.success("OTP sent 📧"); // 🔥 REPLACED
+      toast.success("OTP sent successfully to your email 📧");
+      setOtpSent(true);
       startTimer();
-
     } catch (err) {
-      toast.error(err.response?.data || "Error ❌"); // 🔥 REPLACED
+      toast.error(err.response?.data || "Failed to send OTP ❌");
     }
   };
 
-  const verifyOtp = async () => {
-    if (!email || !otp || !password) {
-      return toast.warning("Fill all fields ⚠️"); // 🔥 REPLACED
+  const verifyOtp = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !otp.trim() || !password.trim()) {
+      return toast.warning("Please fill in all required fields ⚠️");
     }
 
     try {
@@ -56,57 +60,130 @@ function OtpReset() {
         { email, otp, password }
       );
 
-      toast.success(res.data); // 🔥 REPLACED
-
+      toast.success(res.data || "Password reset successfully! ✅");
     } catch (err) {
-      toast.error(err.response?.data || "Invalid OTP ❌"); // 🔥 REPLACED
+      toast.error(err.response?.data || "Invalid or expired OTP ❌");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center"
-      style={{ minHeight: "100vh", background: "#f1f5f9" }}>
+    <div className="auth-page-container">
+      {/* Blurred Floating Circles (Background Glow) */}
+      <div className="auth-floating-circle auth-floating-circle-1"></div>
+      <div className="auth-floating-circle auth-floating-circle-2"></div>
+      <div className="auth-floating-circle auth-floating-circle-3"></div>
 
-      <div className="card p-4 shadow-lg" style={{ width: "400px" }}>
-        <h3 className="text-center mb-3">OTP Reset</h3>
+      {/* Centered Glassmorphism Card */}
+      <div className="auth-card">
+        {/* Brand Badge */}
+        <div className="auth-brand-badge" aria-hidden="true">
+          
+        </div>
 
-        <input
-          className="form-control mb-2"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-        />
+        <h2 className="auth-title">OTP Password Reset</h2>
+        <p className="auth-subtitle">Verify your email and set a new password.</p>
 
-        <button className="btn btn-dark w-100 mb-3" onClick={sendOtp}>
-          Send OTP
-        </button>
+        <form onSubmit={verifyOtp} noValidate>
+          {/* Email Field */}
+          <div className="auth-input-wrapper">
+            <label htmlFor="otp-email" className="auth-label">
+              Email Address
+            </label>
+            <div className="d-flex gap-2">
+              <input
+                id="otp-email"
+                type="email"
+                className="auth-input"
+                placeholder="Enter email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="btn btn-dark rounded-4 px-3 text-nowrap text-xs font-semibold"
+                style={{ height: "50px", minWidth: "110px" }}
+                onClick={sendOtp}
+                disabled={timer > 0}
+              >
+                {timer > 0 ? `${timer}s` : otpSent ? "Resend 🔄" : "Send OTP 📧"}
+              </button>
+            </div>
+          </div>
 
-        <input
-          className="form-control mb-2"
-          placeholder="Enter OTP"
-          onChange={(e) => setOtp(e.target.value)}
-        />
+          {/* OTP Field */}
+          <div className="auth-input-wrapper">
+            <label htmlFor="otp-code" className="auth-label">
+              Enter 6-Digit OTP
+            </label>
+            <input
+              id="otp-code"
+              type="text"
+              className="auth-input font-monospace text-center fw-bold"
+              placeholder="e.g. 123456"
+              maxLength="6"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              required
+            />
+          </div>
 
-        <input
-          type="password"
-          className="form-control mb-3"
-          placeholder="New Password"
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          {/* New Password Field */}
+          <div className="auth-input-wrapper mb-4">
+            <label htmlFor="otp-password" className="auth-label">
+              New Password
+            </label>
+            <div className="position-relative">
+              <input
+                id="otp-password"
+                type={showPassword ? "text" : "password"}
+                className="auth-input"
+                placeholder="Enter new password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className="auth-input-icon-right"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
+          </div>
 
-        <button className="btn btn-success w-100 mb-2" onClick={verifyOtp}>
-          {loading ? "Verifying..." : "Verify & Reset"}
-        </button>
+          <button type="submit" className="btn-auth-primary mb-3" disabled={loading}>
+            {loading ? (
+              <>
+                <span className="auth-spinner" aria-hidden="true"></span>
+                Verifying OTP...
+              </>
+            ) : (
+              "Verify & Reset Password ✅"
+            )}
+          </button>
+        </form>
 
-        <button
-          className="btn btn-warning w-100"
-          disabled={timer > 0}
-          onClick={sendOtp}
-        >
-          {timer > 0 ? `Resend in ${timer}s` : "Resend OTP 🔄"}
-        </button>
+        <p className="auth-footer-text mt-3">
+          Done resetting password?
+          <Link to="/login" className="auth-footer-link">
+            Back to Login
+          </Link>
+        </p>
+
+        <div className="auth-divider"></div>
+
+        <div className="auth-trust-badges">
+          <span className="auth-trust-item">
+            <span className="auth-trust-icon" aria-hidden="true">🛡</span>
+            Encrypted Verification
+          </span>
+        </div>
       </div>
     </div>
   );

@@ -1,0 +1,174 @@
+/* ==========================================================================
+   NAVBAR & MOBILE SLIDE DRAWER STYLES
+   ========================================================================== */
+
+/* Sticky Top Base */
+.sticky-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1040;
+  background-color: #ffffff !important;
+  transition: box-shadow 0.25s ease, background-color 0.25s ease;
+}
+
+.sticky-navbar.scrolled {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Hover state for links */
+.hover-bg-light:hover {
+  background-color: #f3f4f6;
+  color: #111827 !important;
+}
+
+/* Highlighted match text in search suggestions */
+.search-highlight {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: #111827;
+  font-weight: 700;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* Mobile Layout (< 992px) */
+@media (max-width: 991.98px) {
+  .mobile-header-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .mobile-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .mobile-search-row {
+    width: 100%;
+  }
+
+  /* Hamburger Button */
+  .mobile-hamburger-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: #111827;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+    transition: background 0.2s ease;
+  }
+
+  .mobile-hamburger-btn:active {
+    background-color: #f3f4f6;
+    transform: scale(0.95);
+  }
+
+  /* Slide Drawer Overlay */
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(17, 24, 39, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .drawer-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Slide Drawer Content */
+  .drawer-content {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 84%;
+    max-width: 340px;
+    height: 100%;
+    background: #ffffff;
+    z-index: 1051;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .drawer-overlay.open .drawer-content {
+    transform: translateX(0);
+  }
+
+  /* Drawer Header */
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  /* Drawer Nav List */
+  .drawer-body {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-grow: 1;
+  }
+
+  .drawer-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    text-decoration: none;
+    transition: background 0.15s ease, transform 0.15s ease;
+    min-height: 46px;
+  }
+
+  .drawer-link:active {
+    background: #f3f4f6;
+    transform: scale(0.98);
+  }
+
+  .drawer-link.active {
+    background: #111827;
+    color: #ffffff;
+  }
+
+  /* Drawer Footer */
+  .drawer-footer {
+    padding: 20px;
+    border-top: 1px solid #f3f4f6;
+    background: #f9fafb;
+  }
+}
+
+/* Touch targets >= 44px for desktop & mobile */
+.nav-link-item {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}

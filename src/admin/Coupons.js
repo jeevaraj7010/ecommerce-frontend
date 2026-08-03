@@ -178,11 +178,11 @@ function Coupons() {
   });
 
   return (
-    <div style={{ padding: "10px" }}>
+    <div className="container-fluid py-3 py-md-4 px-2 px-md-3">
       {/* HEADER & CREATE BUTTON */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
-          <h2 className="fw-extrabold text-dark m-0" style={{ letterSpacing: "-0.5px" }}>
+          <h2 className="fw-extrabold text-dark m-0 fs-3 fs-md-2" style={{ letterSpacing: "-0.5px" }}>
             Coupon Management 🎟️
           </h2>
           <p className="text-muted small m-0">
@@ -191,14 +191,14 @@ function Coupons() {
         </div>
         <button
           onClick={handleOpenCreate}
-          className="btn btn-dark rounded-pill px-4 py-2 fw-semibold shadow-sm"
+          className="btn btn-dark rounded-pill px-4 py-2.5 fw-semibold shadow-sm text-sm"
           style={{ background: "#111827", border: "none" }}
         >
           + Create Coupon
         </button>
       </div>
 
-      {/* TOP ANALYTICS CARDS (APPLE GLASSMORPHISM DESIGN) */}
+      {/* TOP ANALYTICS CARDS */}
       <div className="row g-3 mb-4">
         {[
           { title: "Active Coupons", value: analytics.activeCoupons || 0, icon: "⚡", color: "#22c55e" },
@@ -208,9 +208,9 @@ function Coupons() {
           { title: "Discount Given", value: `₹${(analytics.totalDiscountGiven || 0).toLocaleString()}`, icon: "🎁", color: "#ec4899" },
           { title: "Avg Savings / Order", value: `₹${(analytics.avgSavingsPerOrder || 0).toLocaleString()}`, icon: "✨", color: "#f59e0b" },
         ].map((stat, idx) => (
-          <div key={idx} className="col-12 col-sm-6 col-lg-2">
+          <div key={idx} className="col-6 col-md-4 col-lg-2">
             <div
-              className="card border-0 shadow-sm p-3 rounded-4"
+              className="card border-0 shadow-sm p-3 rounded-4 h-100"
               style={{
                 background: "rgba(255, 255, 255, 0.85)",
                 backdropFilter: "blur(12px)",
@@ -218,11 +218,11 @@ function Coupons() {
                 transition: "transform 0.2s ease",
               }}
             >
-              <div className="d-flex align-items-center justify-content-between mb-2">
-                <span className="small text-muted fw-bold">{stat.title}</span>
-                <span className="fs-5">{stat.icon}</span>
+              <div className="d-flex align-items-center justify-content-between mb-1">
+                <span className="small text-muted fw-bold" style={{ fontSize: "11px" }}>{stat.title}</span>
+                <span className="fs-6">{stat.icon}</span>
               </div>
-              <h4 className="fw-extrabold m-0" style={{ color: "#111827", fontSize: "1.25rem" }}>
+              <h4 className="fw-extrabold m-0 text-dark fs-5">
                 {stat.value}
               </h4>
             </div>
@@ -240,6 +240,7 @@ function Coupons() {
               placeholder="🔍 Search coupon code or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ height: "42px" }}
             />
           </div>
           <div className="col-6 col-md-3">
@@ -247,6 +248,7 @@ function Coupons() {
               className="form-select rounded-pill border-light bg-light text-sm"
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
+              style={{ height: "42px" }}
             >
               <option value="ALL">All Types & Offers</option>
               <option value="PERCENTAGE">Percentage</option>
@@ -263,6 +265,7 @@ function Coupons() {
               className="form-select rounded-pill border-light bg-light text-sm"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ height: "42px" }}
             >
               <option value="ALL">All Statuses</option>
               <option value="ACTIVE">ACTIVE</option>
@@ -277,7 +280,7 @@ function Coupons() {
       {/* COUPONS TABLE */}
       <div className="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
         <div className="table-responsive">
-          <table className="table align-middle mb-0">
+          <table className="table align-middle mb-0 text-nowrap">
             <thead style={{ background: "#f8fafc", fontSize: "0.85rem" }}>
               <tr>
                 <th className="py-3 px-4 text-muted fw-bold">COUPON CODE</th>

@@ -1,5 +1,5 @@
 /* ===========================
-   PRODUCTS PAGE
+   PRODUCTS PAGE STYLES
 =========================== */
 
 .scrollbar-hidden {
@@ -19,13 +19,15 @@
 .apple-card-hover {
   border-radius: 20px;
   overflow: hidden;
-  transition: all 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   background: #fff;
+  display: flex;
+  flex-direction: column;
 }
 
 .product-card:hover,
 .apple-card-hover:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
 }
 
@@ -35,81 +37,86 @@
 
 .img-zoom-container {
   width: 100%;
-  height: 280px;
+  height: 240px;
   background: #f8f8f8;
   border-radius: 16px;
   overflow: hidden;
-
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* IMPORTANT */
-
 .img-zoom-container img {
   width: 100% !important;
   height: 100% !important;
-
   object-fit: contain !important;
   object-position: center center !important;
-
   display: block !important;
-
   max-width: 100%;
   max-height: 100%;
-
-  transition: transform .35s ease;
+  transition: transform 0.35s ease;
 }
-
-/* Slight hover */
 
 .product-card:hover .img-zoom-container img,
 .apple-card-hover:hover .img-zoom-container img {
-  transform: scale(1.03);
+  transform: scale(1.04);
+}
+
+/* Heart Wishlist Button */
+.wishlist-heart-btn {
+  width: 36px;
+  height: 36px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.wishlist-heart-btn:active {
+  transform: scale(1.25);
 }
 
 /* ===========================
-   PRODUCT TITLE
+   PRODUCT TITLE & DETAILS
 =========================== */
 
 .product-title {
   font-size: 15px;
   font-weight: 600;
-  color: #222;
+  color: #111827;
   margin-bottom: 4px;
-
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* ===========================
-   PRICE
-=========================== */
-
 .product-price {
-  font-size: 22px;
-  font-weight: 700;
-  color: #111;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.01em;
 }
 
 /* ===========================
-   BUTTONS
+   MOBILE BREAKPOINTS
 =========================== */
 
-.product-card .btn {
-  border-radius: 999px;
-}
-
-/* ===========================
-   MOBILE
-=========================== */
-
-@media (max-width:768px) {
-
+@media (max-width: 768px) {
   .img-zoom-container {
-    height: 220px;
+    height: 180px;
   }
 
+  .product-price {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .img-zoom-container {
+    height: 160px;
+  }
+
+  .apple-card-hover:hover {
+    transform: none;
+  }
 }

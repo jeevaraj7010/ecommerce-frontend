@@ -9,6 +9,11 @@ function Customizations() {
 
   const token = localStorage.getItem("token");
 
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80";
+  };
+
   const fetchCustomizations = useCallback(() => {
     setLoading(true);
     axios
@@ -53,13 +58,13 @@ function Customizations() {
   };
 
   return (
-    <div className="container-fluid py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="container-fluid py-3 py-md-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="fw-extrabold text-dark m-0">Customer Customization Submissions ✨</h2>
+          <h2 className="fw-extrabold text-dark m-0 fs-3 fs-md-2">Customer Customization Submissions ✨</h2>
           <p className="text-muted small m-0">Dashboard view for custom clothing design artwork & text</p>
         </div>
-        <button className="btn btn-outline-dark btn-sm rounded-pill" onClick={fetchCustomizations}>
+        <button className="btn btn-outline-dark btn-sm rounded-pill px-3" onClick={fetchCustomizations}>
           Refresh Requests 🔄
         </button>
       </div>
@@ -77,7 +82,7 @@ function Customizations() {
       ) : (
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
           <div className="table-responsive">
-            <table className="table table-hover align-middle mb-0">
+            <table className="table table-hover align-middle mb-0 text-nowrap">
               <thead className="table-dark">
                 <tr>
                   <th className="ps-4">Req ID</th>
@@ -104,6 +109,8 @@ function Customizations() {
                           style={{ width: "48px", height: "48px", objectFit: "cover", cursor: "pointer" }}
                           onClick={() => setSelectedDetail(item)}
                           title="Click to view details"
+                          loading="lazy"
+                          onError={handleImageError}
                         />
                       ) : (
                         <span className="text-muted small">No Image</span>
@@ -129,18 +136,16 @@ function Customizations() {
                     </td>
                     <td className="text-end pe-4">
                       <div className="d-flex justify-content-end gap-2">
-                        {/* 1. VIEW DETAILS BUTTON */}
                         <button
-                          className="btn btn-sm btn-dark rounded-pill px-3 py-1.5 fw-semibold"
+                          className="btn btn-sm btn-dark rounded-pill px-3 py-1.5 fw-semibold text-xs"
                           onClick={() => setSelectedDetail(item)}
                         >
                           View Details 🔍
                         </button>
 
-                        {/* 2. DOWNLOAD DESIGN BUTTON */}
                         {item.imageUrl && (
                           <button
-                            className="btn btn-sm btn-outline-dark rounded-pill px-3 py-1.5 fw-semibold"
+                            className="btn btn-sm btn-outline-dark rounded-pill px-3 py-1.5 fw-semibold text-xs"
                             onClick={() => triggerDownload(item.imageUrl, `custom_design_${item.id}.png`)}
                           >
                             Download Design 📥
@@ -159,10 +164,15 @@ function Customizations() {
       {/* VIEW DETAILS MODAL */}
       {selectedDetail && (
         <div
-          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3 p-3"
           style={{ zIndex: 1060 }}
+          onClick={() => setSelectedDetail(null)}
         >
-          <div className="bg-white p-4 rounded-4 shadow-lg text-start" style={{ maxWidth: "550px", width: "90%" }}>
+          <div
+            className="bg-white p-4 rounded-4 shadow-lg text-start"
+            style={{ maxWidth: "550px", width: "100%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
               <h5 className="fw-extrabold text-dark m-0">Customization Details #{selectedDetail.id}</h5>
               <button className="btn-close" onClick={() => setSelectedDetail(null)}></button>
@@ -187,6 +197,7 @@ function Customizations() {
                   alt="Customer design artwork"
                   className="rounded-3 img-fluid shadow-sm"
                   style={{ maxHeight: "280px", objectFit: "contain" }}
+                  onError={handleImageError}
                 />
               </div>
             )}
@@ -213,16 +224,16 @@ function Customizations() {
               </div>
             </div>
 
-            <div className="d-flex justify-content-end gap-2">
+            <div className="d-flex justify-content-end gap-2 flex-wrap">
               {selectedDetail.imageUrl && (
                 <button
-                  className="btn btn-dark rounded-pill px-4"
+                  className="btn btn-dark rounded-pill px-4 text-xs py-2 fw-bold"
                   onClick={() => triggerDownload(selectedDetail.imageUrl, `design_${selectedDetail.id}.png`)}
                 >
-                  Download Design Artwork 📥
+                  Download Artwork 📥
                 </button>
               )}
-              <button className="btn btn-outline-secondary rounded-pill px-4" onClick={() => setSelectedDetail(null)}>
+              <button className="btn btn-outline-secondary rounded-pill px-4 text-xs py-2 fw-bold" onClick={() => setSelectedDetail(null)}>
                 Close
               </button>
             </div>

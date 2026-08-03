@@ -35,7 +35,7 @@ function Products() {
   const { isWishlisted, toggleWishlist } = useContext(WishlistContext);
   const role = localStorage.getItem("role");
 
-  // Read URL search params (e.g. from Navbar autocomplete search)
+  // Read URL search params (e.g. from Navbar search)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const searchParam = params.get("search");
@@ -73,6 +73,11 @@ function Products() {
     setCurrentPage(1);
   };
 
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80";
+  };
+
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
   const currentProducts = filteredProducts.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -92,11 +97,13 @@ function Products() {
               value={searchQuery}
               onChange={handleSearchChange}
               style={{ height: "46px", fontSize: "14px" }}
+              aria-label="Search items"
             />
             {searchQuery && (
               <button
                 className="btn btn-sm btn-link text-muted position-absolute end-0 top-50 translate-middle-y me-3 text-decoration-none"
                 onClick={() => setSearchQuery("")}
+                aria-label="Clear search query"
               >
                 ✕
               </button>
@@ -109,10 +116,11 @@ function Products() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat}
-                className={`btn btn-sm rounded-pill px-3 py-2 text-nowrap transition-all ${selectedCategory === cat
+                className={`btn btn-sm rounded-pill px-3 py-2 text-nowrap transition-all ${
+                  selectedCategory === cat
                     ? "btn-dark fw-bold shadow-sm"
                     : "btn-outline-secondary bg-white text-dark border-0 shadow-sm"
-                  }`}
+                }`}
                 onClick={() => handleCategorySelect(cat)}
               >
                 {cat}
@@ -124,7 +132,7 @@ function Products() {
 
       {/* Loading Skeleton */}
       {loading ? (
-        <div className="row g-4">
+        <div className="row g-3 g-md-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <div className="col-6 col-md-4 col-lg-3" key={i}>
               <SkeletonProductCard />
@@ -148,7 +156,7 @@ function Products() {
           </button>
         </div>
       ) : (
-        <div className="row g-4">
+        <div className="row g-3 g-md-4">
           {currentProducts.map((p) => {
             const isCustom =
               p.customizable === true ||
@@ -159,22 +167,22 @@ function Products() {
             const wishlisted = isWishlisted(p.id);
 
             return (
-              <div className="col-6 col-md-4 col-lg-3" key={p.id}>
+              <div className="col-6 col-md-4 col-lg-3 d-flex" key={p.id}>
                 <div
-                  className="card border-0 shadow-sm p-3 h-100 apple-card-hover position-relative"
+                  className="card border-0 shadow-sm p-3 w-100 apple-card-hover position-relative d-flex flex-column"
                   style={{ cursor: "pointer", borderRadius: "20px" }}
                   onClick={() => navigate(`/product/${p.id}`)}
                 >
                   {/* Heart Wishlist Icon */}
                   {role !== "ROLE_ADMIN" && (
                     <button
-                      className="position-absolute top-0 end-0 m-3 btn btn-light btn-sm rounded-circle p-1 shadow-sm border-0 z-2 d-flex align-items-center justify-content-center"
-                      style={{ width: "34px", height: "34px", lineHeight: "1" }}
+                      className="position-absolute top-0 end-0 m-2.5 m-md-3 btn btn-light btn-sm rounded-circle p-1 shadow-sm border-0 z-2 wishlist-heart-btn d-flex align-items-center justify-content-center"
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleWishlist(p);
                       }}
                       title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                      aria-label="Toggle Wishlist"
                     >
                       <span style={{ fontSize: "16px", color: wishlisted ? "#EF4444" : "#aaa" }}>
                         {wishlisted ? "❤️" : "🤍"}
@@ -185,29 +193,30 @@ function Products() {
                   {/* Custom Tag */}
                   {isCustom && (
                     <span
-                      className="position-absolute top-0 start-0 m-3 badge rounded-pill px-2.5 py-1 z-1 shadow-sm"
+                      className="position-absolute top-0 start-0 m-2.5 m-md-3 badge rounded-pill px-2.5 py-1 z-1 shadow-sm"
                       style={{ backgroundColor: "#8B5CF6", color: "#FFF", fontSize: "10px", fontWeight: "600" }}
                     >
                       CUSTOMIZABLE ✨
                     </span>
                   )}
 
-                  {/* Image Zoom Container */}
+                  {/* Image Container */}
                   <div className="img-zoom-container mb-3">
                     <img
-                      src={p.imageUrl || "https://picsum.photos/300"}
+                      src={p.imageUrl || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80"}
                       alt={p.name}
                       loading="lazy"
+                      onError={handleImageError}
                     />
                   </div>
 
-                  <div className="mt-auto">
-                    <h6 className="fw-bold text-dark text-truncate mb-1" style={{ fontSize: "15px" }}>
+                  <div className="mt-auto d-flex flex-column">
+                    <h6 className="fw-bold text-dark text-truncate mb-1 product-title" style={{ fontSize: "14px" }}>
                       {p.name}
                     </h6>
 
                     {/* Star Rating Display */}
-                    <div className="d-flex align-items-center gap-1 mb-2" style={{ fontSize: "13px" }}>
+                    <div className="d-flex align-items-center gap-1 mb-2" style={{ fontSize: "12px" }}>
                       <span className="text-warning">★</span>
                       <span className="fw-semibold text-dark">
                         {p.rating ? p.rating.toFixed(1) : "5.0"}
@@ -216,13 +225,13 @@ function Products() {
                     </div>
 
                     <div className="d-flex align-items-center justify-content-between mb-3">
-                      <span className="fw-extrabold text-dark fs-5">₹{p.price}</span>
+                      <span className="fw-extrabold text-dark product-price">₹{p.price}</span>
                     </div>
 
-                    {/* STRICT STOCK RULE: ONLY SHOW OUT OF STOCK IF QUANTITY <= 0 */}
                     <button
-                      className={`btn btn-sm w-100 rounded-pill py-2 fw-semibold ${isOut ? "btn-secondary" : "btn-dark"
-                        }`}
+                      className={`btn btn-sm w-100 rounded-pill py-2 fw-semibold text-truncate ${
+                        isOut ? "btn-secondary" : "btn-dark"
+                      }`}
                       disabled={isOut}
                       onClick={(e) => {
                         e.stopPropagation();

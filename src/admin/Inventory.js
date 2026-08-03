@@ -31,6 +31,11 @@ function Inventory() {
       .finally(() => setLoading(false));
   };
 
+  const handleImageError = (e) => {
+    e.target.onerror = null;
+    e.target.src = "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80";
+  };
+
   const handleStockChange = (id, val) => {
     setEditingStock((prev) => ({
       ...prev,
@@ -93,10 +98,10 @@ function Inventory() {
   );
 
   return (
-    <div className="container-fluid py-4">
-      <div className="d-flex align-items-center justify-content-between mb-4">
-        <h3 className="fw-bold m-0">Inventory Management 📦</h3>
-        <button className="btn btn-outline-dark btn-sm rounded-pill" onClick={fetchProducts}>
+    <div className="container-fluid py-3 py-md-4">
+      <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <h3 className="fw-bold m-0 fs-4">Inventory Management 📦</h3>
+        <button className="btn btn-outline-dark btn-sm rounded-pill px-3" onClick={fetchProducts}>
           Refresh Inventory 🔄
         </button>
       </div>
@@ -113,12 +118,13 @@ function Inventory() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
+            style={{ height: "44px", fontSize: "14px" }}
           />
         </div>
 
-        <div className="col-12 col-md-7 d-flex gap-2 justify-content-md-end">
+        <div className="col-12 col-md-7 d-flex gap-2 justify-content-start justify-content-md-end flex-wrap">
           <button
-            className={`btn btn-sm rounded-pill px-3 ${
+            className={`btn btn-sm rounded-pill px-3 py-2 ${
               stockFilter === "all" ? "btn-dark fw-bold" : "btn-outline-secondary"
             }`}
             onClick={() => {
@@ -129,7 +135,7 @@ function Inventory() {
             All Stock
           </button>
           <button
-            className={`btn btn-sm rounded-pill px-3 ${
+            className={`btn btn-sm rounded-pill px-3 py-2 ${
               stockFilter === "low" ? "btn-warning text-dark fw-bold" : "btn-outline-warning text-dark"
             }`}
             onClick={() => {
@@ -140,7 +146,7 @@ function Inventory() {
             Low Stock (≤ 5)
           </button>
           <button
-            className={`btn btn-sm rounded-pill px-3 ${
+            className={`btn btn-sm rounded-pill px-3 py-2 ${
               stockFilter === "out" ? "btn-danger fw-bold" : "btn-outline-danger"
             }`}
             onClick={() => {
@@ -156,17 +162,19 @@ function Inventory() {
       {/* Table */}
       {loading ? (
         <div className="text-center py-5">
-          <h5>Loading inventory records...</h5>
+          <div className="spinner-border text-dark" role="status">
+            <span className="visually-hidden">Loading inventory records...</span>
+          </div>
         </div>
       ) : currentProducts.length === 0 ? (
         <div className="text-center py-5 bg-white rounded-4 shadow-sm p-4">
           <h5 className="fw-bold mb-2">No matching products found</h5>
-          <p className="text-muted">Try resetting search filters.</p>
+          <p className="text-muted small mb-0">Try resetting search filters.</p>
         </div>
       ) : (
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
           <div className="table-responsive">
-            <table className="table align-middle mb-0">
+            <table className="table align-middle mb-0 text-nowrap">
               <thead className="table-dark">
                 <tr>
                   <th>Product</th>
@@ -188,12 +196,14 @@ function Inventory() {
                       <td>
                         <div className="d-flex align-items-center gap-2">
                           <img
-                            src={p.imageUrl || "https://picsum.photos/100"}
+                            src={p.imageUrl || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80"}
                             alt={p.name}
-                            style={{ width: "45px", height: "45px", objectFit: "cover" }}
+                            style={{ width: "42px", height: "42px", objectFit: "cover" }}
                             className="rounded"
+                            loading="lazy"
+                            onError={handleImageError}
                           />
-                          <span className="fw-semibold">{p.name}</span>
+                          <span className="fw-semibold text-truncate" style={{ maxWidth: "160px" }}>{p.name}</span>
                         </div>
                       </td>
                       <td>{p.category || "Uncategorized"}</td>
