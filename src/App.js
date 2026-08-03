@@ -27,6 +27,7 @@ import AdminOrders from "./admin/Orders";
 import Users from "./admin/Users";
 import Inventory from "./admin/Inventory";
 import Customizations from "./admin/Customizations";
+import Coupons from "./admin/Coupons";
 
 function App() {
   return (
@@ -73,6 +74,7 @@ function App() {
               <Route path="users" element={<Users />} />
               <Route path="inventory" element={<Inventory />} />
               <Route path="customizations" element={<Customizations />} />
+              <Route path="coupons" element={<Coupons />} />
             </Route>
 
           </Routes>

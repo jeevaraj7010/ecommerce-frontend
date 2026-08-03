@@ -163,6 +163,28 @@ function Orders() {
                           Custom Text: "{o.customText}"
                         </span>
                       )}
+
+                      {o.deliveryName && (
+                        <div className="mt-2 p-2.5 bg-light rounded-3 text-secondary small border">
+                          <strong className="text-dark">📍 Delivered To:</strong> {o.deliveryName} ({o.deliveryPhone})<br />
+                          {o.deliveryHouseNo ? `${o.deliveryHouseNo}, ` : ""}
+                          {o.deliveryStreet}, {o.deliveryCity}, {o.deliveryState} - <strong>{o.deliveryPincode}</strong>
+                          {o.deliveryInstructions && (
+                            <span className="d-block text-muted fst-italic mt-0.5">
+                              Instructions: "{o.deliveryInstructions}"
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {o.couponCode && (
+                        <div className="mt-2 p-2 bg-success bg-opacity-10 text-success rounded-3 small">
+                          <span className="fw-bold font-monospace">🎟️ Coupon: {o.couponCode}</span>
+                          <span className="ms-2">| Discount: -₹{o.discountAmount}</span>
+                          <span className="ms-2">| Shipping: {o.shippingCharge === 0 ? "FREE" : `₹${o.shippingCharge}`}</span>
+                          <span className="ms-2 fw-bold">| Total Saved: ₹{o.totalSavings}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 

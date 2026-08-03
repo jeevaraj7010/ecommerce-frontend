@@ -1,25 +1,39 @@
 import { useState, useContext, useEffect } from "react";
 import axios from "axios";
+import API from "../api/axios";
 import { CartContext } from "./CartContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import AddressSelector from "../components/address/AddressSelector";
 
 function Checkout() {
   const { cartItems, getTotal, clearCart } = useContext(CartContext);
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    street: "",
-    city: "",
-    district: "",
-    pincode: "",
-  });
-
   const [loading, setLoading] = useState(true);
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+
+  // Address state
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+
+  const fetchAddresses = async () => {
+    try {
+      const res = await API.get("/api/profile/address");
+      const list = res.data || [];
+      setAddresses(list);
+
+      // Auto-select Primary address or first address
+      if (list.length > 0) {
+        const primary = list.find((a) => a.defaultAddress);
+        setSelectedAddress(primary || list[0]);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load saved addresses ❌");
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -30,33 +44,37 @@ function Checkout() {
       return;
     }
 
-    axios
-      .get("https://ecommerce-backend-1-tsra.onrender.com/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((res) => {
-        setForm({
-          name: res.data.username || "",
-          phone: res.data.phone || "",
-          email: res.data.email || "",
-          street: res.data.street || "",
-          city: res.data.city || "",
-          district: res.data.district || "",
-          pincode: res.data.pincode || "",
-        });
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load user info ❌");
-      })
-      .finally(() => setLoading(false));
+    try {
+      const savedCoupon = sessionStorage.getItem("hoodify_applied_coupon");
+      if (savedCoupon) {
+        setAppliedCoupon(JSON.parse(savedCoupon));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    fetchAddresses().finally(() => setLoading(false));
   }, [navigate]);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleSaveNewAddress = async (formData) => {
+    try {
+      const res = await API.post("/api/profile/address", formData);
+      toast.success("Address saved successfully 🎉");
+      setSelectedAddress(res.data);
+      fetchAddresses();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to save address ❌");
+    }
   };
+
+  const rawSubtotal = getTotal();
+  const discountAmount = appliedCoupon ? appliedCoupon.discount || 0 : 0;
+  const subtotalAfterDiscount = Math.max(0, rawSubtotal - discountAmount);
+  const shippingCharge = subtotalAfterDiscount >= 1500 ? 0 : 99;
+  const savedShipping = shippingCharge === 0 ? 99 : 0;
+  const totalSavings = discountAmount + savedShipping;
+  const grandTotal = subtotalAfterDiscount + shippingCharge;
 
   const handlePayment = async () => {
     const token = localStorage.getItem("token");
@@ -67,28 +85,8 @@ function Checkout() {
       return;
     }
 
-    if (!form.phone.trim()) {
-      toast.warning("Phone number is required 📱");
-      return;
-    }
-
-    if (!form.email.trim()) {
-      toast.warning("Email is required 📧");
-      return;
-    }
-
-    if (!/\S+@\S+\.\S+/.test(form.email)) {
-      toast.warning("Enter a valid email address ❌");
-      return;
-    }
-
-    if (
-      !form.street.trim() ||
-      !form.city.trim() ||
-      !form.district.trim() ||
-      !form.pincode.trim()
-    ) {
-      toast.warning("Please complete shipping address 🏠");
+    if (!selectedAddress) {
+      toast.warning("Please select or add a delivery address 🏠");
       return;
     }
 
@@ -98,51 +96,60 @@ function Checkout() {
     }
 
     try {
-      await axios.put(
-        "https://ecommerce-backend-1-tsra.onrender.com/auth/update-address",
-        {
-          phone: form.phone,
-          email: form.email,
-          street: form.street,
-          city: form.city,
-          district: form.district,
-          pincode: form.pincode,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Distribute discount & shipping proportionally across items
+      const itemCount = cartItems.length;
+      const perItemDiscount = itemCount > 0 ? discountAmount / itemCount : 0;
+      const perItemShipping = itemCount > 0 ? shippingCharge / itemCount : 0;
+      const perItemSavings = itemCount > 0 ? totalSavings / itemCount : 0;
 
       await Promise.all(
-        cartItems.map((item) =>
-          axios.post(
+        cartItems.map((item) => {
+          const itemSubtotal = item.price * item.quantity;
+          const itemFinalTotal = Math.max(
+            0,
+            itemSubtotal - perItemDiscount + perItemShipping
+          );
+
+          return axios.post(
             `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
             {
               designImageUrl: item.customImageUrl || null,
               customImageUrl: item.customImageUrl || null,
               customText: item.customText || null,
+              couponCode: appliedCoupon ? appliedCoupon.code : null,
+              discountAmount: Math.round(perItemDiscount * 100.0) / 100.0,
+              shippingCharge: Math.round(perItemShipping * 100.0) / 100.0,
+              totalSavings: Math.round(perItemSavings * 100.0) / 100.0,
+              finalTotal: Math.round(itemFinalTotal * 100.0) / 100.0,
+
+              // Delivery address snapshot
+              deliveryName: selectedAddress.fullName,
+              deliveryPhone: selectedAddress.phone,
+              deliveryHouseNo: selectedAddress.houseNo,
+              deliveryStreet: selectedAddress.street,
+              deliveryLandmark: selectedAddress.landmark,
+              deliveryInstructions: selectedAddress.deliveryInstructions,
+              deliveryCity: selectedAddress.city,
+              deliveryDistrict: selectedAddress.district,
+              deliveryState: selectedAddress.state,
+              deliveryPincode: selectedAddress.pincode,
             },
             {
               headers: {
                 Authorization: `Bearer ${token}`,
               },
             }
-          )
-        )
+          );
+        })
       );
 
       toast.success("Order placed successfully 🎉");
+      sessionStorage.removeItem("hoodify_applied_coupon");
       clearCart();
       navigate("/order-success");
     } catch (error) {
       console.error(error);
-      if (error.response?.data?.includes("Email already")) {
-        toast.error("Email already registered to another account ❌");
-      } else {
-        toast.error(error.response?.data || "Failed to complete order placement ❌");
-      }
+      toast.error(error.response?.data?.message || error.response?.data || "Failed to complete order placement ❌");
     }
   };
 
@@ -160,96 +167,49 @@ function Checkout() {
     <div className="container py-5">
       <div className="mb-4">
         <h2 className="fw-extrabold text-dark m-0" style={{ letterSpacing: "-0.5px" }}>Checkout</h2>
-        <p className="text-muted small">Complete your delivery address & payment details</p>
+        <p className="text-muted small">Select delivery address, review summary & complete order</p>
       </div>
 
       <div className="row g-4">
-        {/* SHIPPING & PAYMENT FORM */}
+        {/* LEFT COLUMN: ADDRESS SELECTION & PAYMENT METHOD */}
         <div className="col-12 col-lg-7">
+          {/* STEP 1: DELIVERY ADDRESS SELECTOR */}
           <div className="card border-0 shadow-sm p-4 rounded-4 bg-white mb-4">
-            <h5 className="fw-bold text-dark mb-3">1. Shipping Address</h5>
-
-            <div className="mb-3">
-              <label className="form-label small fw-bold text-muted">Customer Name</label>
-              <input className="form-control rounded-3 bg-light border-0" value={form.name} readOnly />
-            </div>
-
-            <div className="row g-3 mb-3">
-              <div className="col-12 col-md-6">
-                <label className="form-label small fw-bold text-dark">Phone Number</label>
-                <input
-                  name="phone"
-                  className="form-control rounded-3 border-0 bg-light"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="+91 9876543210"
-                />
-              </div>
-
-              <div className="col-12 col-md-6">
-                <label className="form-label small fw-bold text-dark">Email Address</label>
-                <input
-                  name="email"
-                  type="email"
-                  className="form-control rounded-3 border-0 bg-light"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="name@example.com"
-                />
-              </div>
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label small fw-bold text-dark">Street / Flat / Locality</label>
-              <textarea
-                name="street"
-                className="form-control rounded-3 border-0 bg-light"
-                rows="2"
-                value={form.street}
-                onChange={handleChange}
-                placeholder="Building No, Street Name, Area..."
-              />
-            </div>
-
-            <div className="row g-3 mb-3">
-              <div className="col-12 col-md-4">
-                <label className="form-label small fw-bold text-dark">City</label>
-                <input
-                  name="city"
-                  className="form-control rounded-3 border-0 bg-light"
-                  value={form.city}
-                  onChange={handleChange}
-                  placeholder="City"
-                />
-              </div>
-
-              <div className="col-12 col-md-4">
-                <label className="form-label small fw-bold text-dark">District</label>
-                <input
-                  name="district"
-                  className="form-control rounded-3 border-0 bg-light"
-                  value={form.district}
-                  onChange={handleChange}
-                  placeholder="District"
-                />
-              </div>
-
-              <div className="col-12 col-md-4">
-                <label className="form-label small fw-bold text-dark">Pincode</label>
-                <input
-                  name="pincode"
-                  className="form-control rounded-3 border-0 bg-light"
-                  value={form.pincode}
-                  onChange={handleChange}
-                  placeholder="600001"
-                />
-              </div>
-            </div>
+            <h5 className="fw-bold text-dark mb-3">1. Delivery Address</h5>
+            <AddressSelector
+              addresses={addresses}
+              selectedAddress={selectedAddress}
+              onSelectAddress={(addr) => setSelectedAddress(addr)}
+              onSaveNewAddress={handleSaveNewAddress}
+            />
           </div>
 
-          {/* PAYMENT METHOD SELECTION */}
+          {/* STEP 2: ADDRESS CONFIRMATION STEP */}
+          {selectedAddress && (
+            <div className="card border-0 shadow-sm p-4 rounded-4 bg-white mb-4" style={{ borderLeft: "4px solid #22c55e" }}>
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <h6 className="fw-bold text-dark m-0">Confirm Delivery Destination 📍</h6>
+                <span className="badge bg-success bg-opacity-10 text-success fw-bold px-2.5 py-1 rounded-pill small">
+                  SELECTED
+                </span>
+              </div>
+              <div className="fw-extrabold text-dark">{selectedAddress.fullName}</div>
+              <div className="text-muted small mb-1">📱 {selectedAddress.phone}</div>
+              <div className="text-secondary small">
+                {selectedAddress.houseNo && `${selectedAddress.houseNo}, `}
+                {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+              </div>
+              {selectedAddress.deliveryInstructions && (
+                <small className="text-muted fst-italic d-block mt-1">
+                  Note: {selectedAddress.deliveryInstructions}
+                </small>
+              )}
+            </div>
+          )}
+
+          {/* STEP 3: PAYMENT METHOD SELECTION */}
           <div className="card border-0 shadow-sm p-4 rounded-4 bg-white">
-            <h5 className="fw-bold text-dark mb-3">2. Payment Method</h5>
+            <h5 className="fw-bold text-dark mb-3">3. Payment Method</h5>
 
             <div className="card border-2 border-dark p-3 rounded-4 bg-dark text-white">
               <div className="d-flex align-items-center justify-content-between">
@@ -263,7 +223,7 @@ function Checkout() {
           </div>
         </div>
 
-        {/* SUMMARY CARD */}
+        {/* RIGHT COLUMN: ORDER SUMMARY CARD */}
         <div className="col-12 col-lg-5">
           <div className="card border-0 shadow-sm p-4 rounded-4 bg-white sticky-top" style={{ top: "100px" }}>
             <h5 className="fw-bold text-dark mb-3">Order Summary</h5>
@@ -304,14 +264,31 @@ function Checkout() {
             </div>
 
             <div className="d-flex justify-content-between mb-2 text-secondary">
-              <span>Items Total</span>
-              <span className="fw-semibold text-dark">₹{getTotal()}</span>
+              <span>Items Subtotal</span>
+              <span className="fw-semibold text-dark">₹{rawSubtotal}</span>
             </div>
 
+            {appliedCoupon && (
+              <div className="d-flex justify-content-between mb-2 text-success">
+                <span>
+                  Coupon Applied (<strong className="font-monospace">{appliedCoupon.code}</strong>)
+                </span>
+                <span className="fw-bold">-₹{discountAmount}</span>
+              </div>
+            )}
+
             <div className="d-flex justify-content-between mb-2 text-secondary">
-              <span>Shipping</span>
-              <span className="text-success fw-semibold">FREE</span>
+              <span>Shipping Fee</span>
+              <span className={`fw-semibold ${shippingCharge === 0 ? "text-success" : "text-dark"}`}>
+                {shippingCharge === 0 ? "FREE" : `₹${shippingCharge}`}
+              </span>
             </div>
+
+            {totalSavings > 0 && (
+              <div className="p-2 bg-success bg-opacity-10 text-success rounded-3 text-center fw-bold small my-2">
+                🎉 Total Savings: ₹{totalSavings}
+              </div>
+            )}
 
             {/* ESTIMATED DELIVERY */}
             <div className="p-3 bg-light rounded-3 mb-3 border">
@@ -327,13 +304,13 @@ function Checkout() {
 
             <div className="d-flex justify-content-between mb-4">
               <span className="fw-bold fs-5 text-dark">Grand Total</span>
-              <span className="fw-extrabold fs-4 text-dark">₹{getTotal()}</span>
+              <span className="fw-extrabold fs-4 text-dark">₹{grandTotal}</span>
             </div>
 
             <button
               className="btn btn-dark w-100 py-3 rounded-pill fw-bold shadow"
               onClick={handlePayment}
-              disabled={cartItems.length === 0}
+              disabled={cartItems.length === 0 || !selectedAddress}
             >
               Place Order Now 💳
             </button>

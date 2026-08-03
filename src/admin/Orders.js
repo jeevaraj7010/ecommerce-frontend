@@ -134,7 +134,13 @@ function Orders() {
                       <div>
                         <h6 className="fw-bold text-dark mb-0 text-truncate">{o.productName}</h6>
                         <small className="text-muted d-block">Order #{o.id}</small>
-                        <small className="text-muted d-block">Customer: {o.username}</small>
+                        <small className="text-muted d-block">Customer: <b>{o.deliveryName || o.username}</b></small>
+                        {o.deliveryPhone && <small className="text-muted d-block">Phone: <b>{o.deliveryPhone}</b></small>}
+                        {o.deliveryCity && (
+                          <small className="text-primary d-block fw-semibold" style={{ fontSize: "11px" }}>
+                            📍 {o.deliveryCity}, {o.deliveryState} - {o.deliveryPincode}
+                          </small>
+                        )}
                       </div>
                     </div>
 
@@ -142,6 +148,11 @@ function Orders() {
                       <small className="text-muted d-block">Price & Qty</small>
                       <span className="fw-bold text-dark">₹{o.totalPrice}</span>
                       <small className="text-muted"> ({o.quantity} qty)</small>
+                      {o.couponCode && (
+                        <small className="d-block text-success fw-bold font-monospace mt-1">
+                          🎟️ {o.couponCode} (-₹{o.discountAmount})
+                        </small>
+                      )}
                     </div>
 
                     <div className="col-6 col-md-3">

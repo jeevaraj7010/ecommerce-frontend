@@ -81,6 +81,7 @@ function AdminLayout() {
           <Link to="/admin/users" style={linkStyle("/admin/users")}>Users</Link>
           <Link to="/admin/inventory" style={linkStyle("/admin/inventory")}>Inventory 📦</Link>
           <Link to="/admin/customizations" style={linkStyle("/admin/customizations")}>Customizations ✨</Link>
+          <Link to="/admin/coupons" style={linkStyle("/admin/coupons")}>Coupons 🎟️</Link>
         </nav>
 
 
