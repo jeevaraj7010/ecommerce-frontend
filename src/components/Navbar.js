@@ -164,7 +164,6 @@ function Navbar() {
     const currentX = e.touches[0].clientX;
     const diffX = currentX - touchStartX;
     if (diffX > 60) {
-      // Swiped right -> Close drawer
       setIsNavOpen(false);
       setTouchStartX(null);
     }
@@ -179,7 +178,7 @@ function Navbar() {
       >
         <div className="container-fluid px-0">
           {/* ==========================================
-              DESKTOP NAVBAR HEADER (>= 992px)
+              DESKTOP NAVBAR HEADER (>= 992px) ONLY
               ========================================== */}
           <div className="d-none d-lg-flex align-items-center justify-content-between w-100">
             {/* BRAND LOGO */}
@@ -335,7 +334,7 @@ function Navbar() {
           </div>
 
           {/* ==========================================
-              MOBILE HEADER LAYOUT (< 992px)
+              MOBILE HEADER LAYOUT (< 992px ONLY)
               ========================================== */}
           <div className="d-flex d-lg-none mobile-header-container">
             {/* ROW 1: BRAND LOGO + HAMBURGER BUTTON */}
@@ -416,10 +415,10 @@ function Navbar() {
       </nav>
 
       {/* ==========================================
-          MOBILE SLIDE DRAWER MENU OVERLAY (< 992px)
+          MOBILE SLIDE DRAWER MENU OVERLAY (< 992px ONLY)
           ========================================== */}
       <div
-        className={`drawer-overlay ${isNavOpen ? "open" : ""}`}
+        className={`drawer-overlay d-lg-none ${isNavOpen ? "open" : ""}`}
         onClick={() => setIsNavOpen(false)}
       >
         <div

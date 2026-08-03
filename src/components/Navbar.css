@@ -1,8 +1,8 @@
 /* ==========================================================================
-   NAVBAR & MOBILE SLIDE DRAWER STYLES
+   HOODIFY LUXURY NAVBAR & RESPONSIVE MOBILE SLIDE DRAWER
    ========================================================================== */
 
-/* Sticky Top Base */
+/* Sticky Top Base Header */
 .sticky-navbar {
   position: sticky;
   top: 0;
@@ -15,10 +15,17 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* Hover state for links */
+/* Desktop Navigation Hover State */
 .hover-bg-light:hover {
   background-color: #f3f4f6;
   color: #111827 !important;
+}
+
+/* Touch targets for desktop navigation */
+.nav-link-item {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Highlighted match text in search suggestions */
@@ -30,10 +37,23 @@
   padding: 0 2px;
 }
 
-/* Mobile Layout (< 992px) */
+/* ==========================================================================
+   DEFAULT DRAWER HIDDEN (ESPECIALLY ON DESKTOP ≥ 992px)
+   ========================================================================== */
+.drawer-overlay {
+  display: none;
+}
+
+.mobile-header-container {
+  display: none !important;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET VIEW (< 992px)
+   ========================================================================== */
 @media (max-width: 991.98px) {
   .mobile-header-container {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     width: 100%;
     gap: 8px;
@@ -64,7 +84,7 @@
     cursor: pointer;
     min-width: 44px;
     min-height: 44px;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.15s ease;
   }
 
   .mobile-hamburger-btn:active {
@@ -72,8 +92,9 @@
     transform: scale(0.95);
   }
 
-  /* Slide Drawer Overlay */
+  /* Mobile Slide Drawer Overlay */
   .drawer-overlay {
+    display: block;
     position: fixed;
     top: 0;
     left: 0;
@@ -85,15 +106,17 @@
     z-index: 1050;
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.3s ease, visibility 0.3s ease;
   }
 
   .drawer-overlay.open {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
   }
 
-  /* Slide Drawer Content */
+  /* Slide Drawer Content Container */
   .drawer-content {
     position: fixed;
     top: 0;
@@ -125,7 +148,7 @@
     border-bottom: 1px solid #f3f4f6;
   }
 
-  /* Drawer Nav List */
+  /* Drawer Body Nav List */
   .drawer-body {
     padding: 16px 20px;
     display: flex;
@@ -164,11 +187,4 @@
     border-top: 1px solid #f3f4f6;
     background: #f9fafb;
   }
-}
-
-/* Touch targets >= 44px for desktop & mobile */
-.nav-link-item {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
 }
