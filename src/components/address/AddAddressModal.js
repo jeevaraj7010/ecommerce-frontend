@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import ReactDOM from "react-dom";
+import axios from "axios";
 import API from "../../api/axios";
 import { toast } from "react-toastify";
 
@@ -23,7 +25,21 @@ const INITIAL_FORM = {
 function AddAddressModal({ show, onClose, onSave, editingAddress }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [fetchingPincode, setFetchingPincode] = useState(false);
+  const [deliveryStatus, setDeliveryStatus] = useState(null);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (show) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [show]);
+
+  // Populate form on open/edit
   useEffect(() => {
     if (editingAddress) {
       setForm({
@@ -43,40 +59,111 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
         deliveryInstructions: editingAddress.deliveryInstructions || "",
         defaultAddress: editingAddress.defaultAddress || false,
       });
+      if (editingAddress.pincode && editingAddress.pincode.length === 6) {
+        setDeliveryStatus({
+          available: true,
+          estimatedDays: "3-5 Business Days",
+        });
+      }
     } else {
       setForm(INITIAL_FORM);
+      setDeliveryStatus(null);
     }
   }, [editingAddress, show]);
 
-  // Handle pincode 6-digit auto lookup
-  const handlePincodeChange = (e) => {
+  // Handle pincode 6-digit auto lookup (triggers GET /api/location/pincode/{pincode})
+  const handlePincodeChange = async (e) => {
     const val = e.target.value.replace(/\D/g, "").slice(0, 6);
     setForm((prev) => ({ ...prev, pincode: val }));
 
     if (val.length === 6) {
       setFetchingPincode(true);
-      API.get(`/api/location/pincode/${val}`)
-        .then((res) => {
-          if (res.data) {
-            setForm((prev) => ({
-              ...prev,
-              city: res.data.city || prev.city,
-              district: res.data.district || prev.district,
-              state: res.data.state || prev.state,
-            }));
-            if (res.data.available) {
-              toast.success(res.data.message || "Delivery available in this area ✓");
-            } else {
-              toast.warning(res.data.message || "Delivery unavailable in this area ❌");
+
+      try {
+        // 1. Call Backend API (logged in Network tab)
+        const res = await API.get(`/api/location/pincode/${val}`);
+        if (res.data) {
+          let city = res.data.city || "";
+          let district = res.data.district || "";
+          let state = res.data.state || "";
+
+          // Fallback to Postal API if city/state not returned from backend
+          if (!city || !state) {
+            try {
+              const postRes = await axios.get(`https://api.postalpincode.in/pincode/${val}`);
+              if (
+                postRes.data &&
+                postRes.data[0] &&
+                postRes.data[0].Status === "Success" &&
+                postRes.data[0].PostOffice &&
+                postRes.data[0].PostOffice.length > 0
+              ) {
+                const po = postRes.data[0].PostOffice[0];
+                city = po.District || po.Name || city;
+                district = po.District || district;
+                state = po.State || state;
+              }
+            } catch (pErr) {
+              console.error("Postal API error:", pErr);
             }
           }
-        })
-        .catch(() => {
+
+          setForm((prev) => ({
+            ...prev,
+            city: city || prev.city,
+            district: district || prev.district,
+            state: state || prev.state,
+          }));
+
+          setDeliveryStatus({
+            available: res.data.available !== false,
+            estimatedDays: res.data.estimatedDays || "3-5 Business Days",
+          });
+        }
+      } catch (err) {
+        console.error("Pincode backend error:", err);
+        // Direct Fallback to Postal API
+        try {
+          const postRes = await axios.get(`https://api.postalpincode.in/pincode/${val}`);
+          if (
+            postRes.data &&
+            postRes.data[0] &&
+            postRes.data[0].Status === "Success" &&
+            postRes.data[0].PostOffice &&
+            postRes.data[0].PostOffice.length > 0
+          ) {
+            const po = postRes.data[0].PostOffice[0];
+            setForm((prev) => ({
+              ...prev,
+              city: po.District || po.Name,
+              district: po.District,
+              state: po.State,
+            }));
+            setDeliveryStatus({
+              available: true,
+              estimatedDays: "3-5 Business Days",
+            });
+          } else {
+            toast.error("Invalid pincode or area not found ❌");
+          }
+        } catch (e2) {
           toast.error("Failed to lookup pincode ❌");
-        })
-        .finally(() => setFetchingPincode(false));
+        }
+      } finally {
+        setFetchingPincode(false);
+      }
+    } else {
+      setDeliveryStatus(null);
     }
   };
+
+  // Check if ALL required address fields are complete and valid
+  const isFormValidForDelivery =
+    form.fullName.trim().length > 0 &&
+    /^[6-9]\d{9}$/.test(form.phone.trim()) &&
+    form.houseNo.trim().length > 0 &&
+    form.street.trim().length > 0 &&
+    /^\d{6}$/.test(form.pincode.trim());
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -91,6 +178,11 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
       return;
     }
 
+    if (form.alternatePhone && !/^[6-9]\d{9}$/.test(form.alternatePhone.trim())) {
+      toast.warning("Alternate phone must be a valid 10-digit number starting with 6, 7, 8, or 9 📱");
+      return;
+    }
+
     if (!form.houseNo.trim()) {
       toast.warning("House No / Flat No is required 🏠");
       return;
@@ -101,7 +193,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
       return;
     }
 
-    if (!form.pincode || form.pincode.length !== 6) {
+    if (!form.pincode || !/^\d{6}$/.test(form.pincode.trim())) {
       toast.warning("Enter a valid 6-digit pincode 📮");
       return;
     }
@@ -111,15 +203,28 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
 
   if (!show) return null;
 
-  return (
+  const modalContent = (
     <div
-      className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center z-3 p-3"
-      style={{ zIndex: 1060 }}
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
+      style={{
+        zIndex: 99999,
+        backgroundColor: "rgba(0, 0, 0, 0.6)",
+        backdropFilter: "blur(4px)",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div
-        className="bg-white rounded-4 shadow-lg p-4 w-100"
-        style={{ maxWidth: "620px", maxHeight: "92vh", overflowY: "auto" }}
+        className="bg-white rounded-4 shadow-lg p-4 w-100 position-relative"
+        style={{
+          maxWidth: "620px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          zIndex: 100000,
+        }}
       >
+        {/* MODAL HEADER */}
         <div className="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
           <h5 className="fw-extrabold text-dark m-0">
             {form.id ? "Edit Address ✏️" : "Add Delivery Address 🏠"}
@@ -127,9 +232,10 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
           <button type="button" className="btn-close" onClick={onClose}></button>
         </div>
 
+        {/* MODAL FORM */}
         <form onSubmit={handleSubmit}>
           <div className="row g-3">
-            {/* FULL NAME & PHONE */}
+            {/* FULL NAME */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">Full Name *</label>
               <input
@@ -142,6 +248,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
+            {/* PHONE NUMBER */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">Phone Number (10 digits) *</label>
               <input
@@ -155,6 +262,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
+            {/* ALTERNATE PHONE */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">Alternate Phone (Optional)</label>
               <input
@@ -167,6 +275,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
+            {/* ADDRESS TYPE */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">Address Type</label>
               <select
@@ -187,6 +296,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               </select>
             </div>
 
+            {/* NICKNAME / LABEL */}
             <div className="col-12">
               <label className="form-label small fw-bold text-dark">Address Nickname / Label</label>
               <input
@@ -198,7 +308,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
-            {/* HOUSE NO & STREET */}
+            {/* HOUSE NO / FLAT NO */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">House No / Flat No *</label>
               <input
@@ -211,6 +321,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
+            {/* AREA / STREET */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">Area / Street *</label>
               <input
@@ -223,6 +334,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
+            {/* LANDMARK */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">Landmark (Optional)</label>
               <input
@@ -234,23 +346,42 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
-            {/* PINCODE */}
+            {/* PINCODE & INLINE DELIVERY BANNER */}
             <div className="col-12 col-md-6">
               <label className="form-label small fw-bold text-dark">
-                Pincode (6 digits) * {fetchingPincode && <span className="spinner-border spinner-border-sm text-primary"></span>}
+                Pincode (6 digits) *{" "}
+                {fetchingPincode && (
+                  <span className="spinner-border spinner-border-sm text-primary ms-1" role="status"></span>
+                )}
               </label>
               <input
                 type="text"
                 className="form-control rounded-3 font-monospace"
-                placeholder="e.g. 600001"
+                placeholder="e.g. 600011"
                 value={form.pincode}
                 onChange={handlePincodeChange}
                 maxLength="6"
                 required
               />
+
+              {/* INLINE DELIVERY BANNER (Only displayed when ALL required fields are completed & valid) */}
+              {isFormValidForDelivery && deliveryStatus && (
+                <div
+                  className={`mt-2 p-2.5 rounded-3 border small fw-semibold ${
+                    deliveryStatus.available !== false
+                      ? "bg-success bg-opacity-10 border-success text-success"
+                      : "bg-danger bg-opacity-10 border-danger text-danger"
+                  }`}
+                >
+                  <div>{deliveryStatus.available !== false ? "✓ Delivery Available" : "❌ Delivery Unavailable"}</div>
+                  <div className="text-muted small mt-0.5" style={{ fontSize: "11px" }}>
+                    Estimated Delivery: {deliveryStatus.estimatedDays || "3–5 Business Days"}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* AUTO FILLED READONLY LOCATION FIELDS */}
+            {/* READONLY CITY / DISTRICT / STATE */}
             <div className="col-12 col-md-4">
               <label className="form-label small fw-bold text-muted">City (Auto)</label>
               <input
@@ -307,6 +438,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
               />
             </div>
 
+            {/* PRIMARY ADDRESS SWITCH */}
             <div className="col-12">
               <div className="form-check form-switch mt-1">
                 <input
@@ -323,6 +455,7 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
             </div>
           </div>
 
+          {/* FOOTER ACTIONS */}
           <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
             <button type="button" className="btn btn-secondary rounded-pill px-4" onClick={onClose}>
               Cancel
@@ -339,6 +472,8 @@ function AddAddressModal({ show, onClose, onSave, editingAddress }) {
       </div>
     </div>
   );
+
+  return ReactDOM.createPortal(modalContent, document.body);
 }
 
 export default AddAddressModal;
