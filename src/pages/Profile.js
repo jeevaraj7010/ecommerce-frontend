@@ -30,11 +30,7 @@ function Profile() {
   useEffect(() => {
     const fetchProfileAndAddresses = async () => {
       const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Please login to view profile ❌");
-        navigate("/login", { replace: true, state: { from: "/profile" } });
-        return;
-      }
+      if (!token) return;
 
       try {
         const [resProfile, resAddresses] = await Promise.all([
@@ -48,14 +44,13 @@ function Profile() {
         setAddresses(resAddresses.data || []);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load profile details ❌");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfileAndAddresses();
-  }, [navigate]);
+  }, []);
 
   const refreshAddresses = async () => {
     try {

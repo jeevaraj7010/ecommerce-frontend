@@ -36,8 +36,7 @@ function Dashboard() {
     });
   }, []);
 
-  // Calculate 13 Analytics Metrics
-  const totalUsers = data.users || 0;
+  // Store Operations Metrics
   const totalProducts = data.products || products.length || 0;
   const totalOrders = data.orders || orders.length || 0;
   const totalRevenue = data.revenue || orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
@@ -47,12 +46,11 @@ function Dashboard() {
     return st === "PLACED" || st === "PENDING" || st === "PRINTING STARTED" || st === "QUALITY CHECK";
   }).length;
 
-  const customOrders = customizations.length || orders.filter((o) => Boolean(o.designImageUrl || o.customText)).length;
+  const customOrdersCount = customizations.length || orders.filter((o) => Boolean(o.designImageUrl || o.customText)).length;
   const lowStockProducts = products.filter((p) => p.quantity > 0 && p.quantity <= 5);
   const outOfStockProducts = products.filter((p) => p.quantity <= 0);
-  const recentlyAddedProductsCount = products.length;
 
-  // Calculate Top Selling Products (Aggregated by Product Name from Orders)
+  // Top Selling Products
   const topSellingProducts = useMemo(() => {
     const salesMap = {};
     orders.forEach((o) => {
@@ -68,7 +66,7 @@ function Dashboard() {
       .slice(0, 5);
   }, [orders, products]);
 
-  // Calculate Today's Revenue
+  // Today's Revenue
   const todayRevenue = useMemo(() => {
     const todayStr = new Date().toISOString().split("T")[0];
     return orders
@@ -81,19 +79,11 @@ function Dashboard() {
     return [...orders].reverse().slice(0, 5);
   }, [orders]);
 
-  const recentOrdersCount = recentOrders.length;
-
-  // Pending Custom Orders
-  const pendingCustomOrders = customizations.filter((c) => {
-    const st = (c.status || "").toUpperCase();
-    return st === "PENDING" || st === "PLACED" || st === "PRINTING STARTED";
-  }).length;
-
   if (loading) {
     return (
       <div className="text-center py-5">
         <div className="spinner-border text-dark" role="status">
-          <span className="visually-hidden">Loading admin dashboard...</span>
+          <span className="visually-hidden">Loading admin operations dashboard...</span>
         </div>
       </div>
     );
@@ -104,40 +94,16 @@ function Dashboard() {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="fw-extrabold text-dark m-0" style={{ letterSpacing: "-0.5px" }}>
-            Admin Store Control Center 📊
+            Store Operations Control Center 📊
           </h2>
-          <p className="text-muted small m-0">Live revenue metrics, sales analytics, & order processing</p>
+          <p className="text-muted small m-0">Live store metrics, revenue analytics, inventory & order processing</p>
         </div>
       </div>
 
-      {/* 📊 13 PREMIUM ANALYTICS CARDS GRID */}
+      {/* STORE OPERATIONS METRICS CARDS GRID */}
       <div className="row g-3 mb-4">
         <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">TOTAL USERS</span>
-            <h3 className="fw-extrabold text-dark m-0">{totalUsers}</h3>
-            <small className="text-success mt-1 d-block">👤 Registered Accounts</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">TOTAL PRODUCTS</span>
-            <h3 className="fw-extrabold text-dark m-0">{totalProducts}</h3>
-            <small className="text-muted mt-1 d-block">👕 Catalog Items</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">TOTAL ORDERS</span>
-            <h3 className="fw-extrabold text-dark m-0">{totalOrders}</h3>
-            <small className="text-primary mt-1 d-block">📦 Processed Orders</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-success">
             <span className="text-muted small fw-bold d-block mb-1">TOTAL REVENUE</span>
             <h3 className="fw-extrabold text-success m-0">₹{totalRevenue}</h3>
             <small className="text-success mt-1 d-block">💰 Gross Sales Revenue</small>
@@ -145,7 +111,23 @@ function Dashboard() {
         </div>
 
         <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-primary">
+            <span className="text-muted small fw-bold d-block mb-1">TOTAL ORDERS</span>
+            <h3 className="fw-extrabold text-dark m-0">{totalOrders}</h3>
+            <small className="text-primary mt-1 d-block">📦 Processed Orders</small>
+          </div>
+        </div>
+
+        <div className="col-6 col-md-4 col-lg-3">
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-dark">
+            <span className="text-muted small fw-bold d-block mb-1">CATALOG PRODUCTS</span>
+            <h3 className="fw-extrabold text-dark m-0">{totalProducts}</h3>
+            <small className="text-muted mt-1 d-block">👕 Active Apparel Items</small>
+          </div>
+        </div>
+
+        <div className="col-6 col-md-4 col-lg-3">
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-warning">
             <span className="text-muted small fw-bold d-block mb-1">PENDING ORDERS</span>
             <h3 className="fw-extrabold text-warning m-0">{pendingOrders}</h3>
             <small className="text-warning mt-1 d-block">⏳ In Fulfillment</small>
@@ -153,47 +135,23 @@ function Dashboard() {
         </div>
 
         <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">CUSTOM ORDERS</span>
-            <h3 className="fw-extrabold text-purple m-0" style={{ color: "#8B5CF6" }}>{customOrders}</h3>
-            <small className="mt-1 d-block" style={{ color: "#8B5CF6" }}>✨ Print Requests</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-warning">
             <span className="text-muted small fw-bold d-block mb-1">LOW STOCK PRODUCTS</span>
             <h3 className="fw-extrabold text-warning m-0">{lowStockProducts.length}</h3>
-            <small className="text-warning mt-1 d-block">🟡 ≤ 5 Left in Inventory</small>
+            <small className="text-warning mt-1 d-block">🟡 ≤ 5 Units Left</small>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">OUT OF STOCK PRODUCTS</span>
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-danger">
+            <span className="text-muted small fw-bold d-block mb-1">OUT OF STOCK</span>
             <h3 className="fw-extrabold text-danger m-0">{outOfStockProducts.length}</h3>
-            <small className="text-danger mt-1 d-block">🔴 Restock Urgently</small>
+            <small className="text-danger mt-1 d-block">🔴 Restock Required</small>
           </div>
         </div>
 
         <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">RECENTLY ADDED PRODUCTS</span>
-            <h3 className="fw-extrabold text-dark m-0">{recentlyAddedProductsCount}</h3>
-            <small className="text-muted mt-1 d-block">✨ Active Catalog Additions</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">TOP SELLING PRODUCTS</span>
-            <h3 className="fw-extrabold text-primary m-0">{topSellingProducts.length}</h3>
-            <small className="text-primary mt-1 d-block">🔥 Best Performers</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-success">
             <span className="text-muted small fw-bold d-block mb-1">TODAY'S REVENUE</span>
             <h3 className="fw-extrabold text-success m-0">₹{todayRevenue}</h3>
             <small className="text-success mt-1 d-block">📅 Today's Sales</small>
@@ -201,25 +159,16 @@ function Dashboard() {
         </div>
 
         <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">RECENT ORDERS</span>
-            <h3 className="fw-extrabold text-dark m-0">{recentOrdersCount}</h3>
-            <small className="text-muted mt-1 d-block">⚡ Recent Activity</small>
-          </div>
-        </div>
-
-        <div className="col-6 col-md-4 col-lg-3">
-          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100">
-            <span className="text-muted small fw-bold d-block mb-1">PENDING CUSTOM ORDERS</span>
-            <h3 className="fw-extrabold text-purple m-0" style={{ color: "#8B5CF6" }}>{pendingCustomOrders}</h3>
-            <small className="mt-1 d-block" style={{ color: "#8B5CF6" }}>🎨 Awaiting Print</small>
+          <div className="card border-0 shadow-sm p-3 rounded-4 bg-white h-100 border-start border-4 border-info">
+            <span className="text-muted small fw-bold d-block mb-1">CUSTOM PRINT ORDERS</span>
+            <h3 className="fw-extrabold text-info m-0">{customOrdersCount}</h3>
+            <small className="text-info mt-1 d-block">✨ Personalized Artwork</small>
           </div>
         </div>
       </div>
 
-      {/* 📦 RECENT ORDERS TABLE (SECTION 8) & TOP SELLING PRODUCTS (SECTION 9) */}
+      {/* RECENT ORDERS TABLE & TOP SELLING PRODUCTS */}
       <div className="row g-4 mb-4">
-        {/* SECTION 8: RECENT ORDERS */}
         <div className="col-12 col-lg-7">
           <div className="card border-0 shadow-sm p-4 rounded-4 bg-white h-100">
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -240,14 +189,13 @@ function Dashboard() {
                       <th>Qty</th>
                       <th>Total</th>
                       <th>Status</th>
-                      <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentOrders.map((o) => (
                       <tr key={o.id}>
                         <td className="fw-bold">#{o.id}</td>
-                        <td>{o.username}</td>
+                        <td>{o.deliveryName || o.username || "Customer"}</td>
                         <td className="fw-semibold text-truncate" style={{ maxWidth: "140px" }}>{o.productName}</td>
                         <td>{o.quantity}</td>
                         <td className="fw-bold text-dark">₹{o.totalPrice}</td>
@@ -258,9 +206,6 @@ function Dashboard() {
                             {o.status}
                           </span>
                         </td>
-                        <td className="text-muted small">
-                          {o.orderDate ? new Date(o.orderDate).toLocaleDateString() : "Today"}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -270,7 +215,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* SECTION 9: TOP SELLING PRODUCTS */}
         <div className="col-12 col-lg-5">
           <div className="card border-0 shadow-sm p-4 rounded-4 bg-white h-100">
             <div className="d-flex justify-content-between align-items-center mb-3">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import axios from "axios";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -9,12 +9,14 @@ function OtpReset() {
   const initialEmail = location.state?.email || "";
 
   const [email, setEmail] = useState(initialEmail);
-  const [otp, setOtp] = useState("");
+  const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [timer, setTimer] = useState(0);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+
+  const otpInputRefs = useRef([]);
 
   const startTimer = () => {
     setTimer(60);
@@ -29,6 +31,35 @@ function OtpReset() {
     }, 1000);
   };
 
+  const handleOtpDigitChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+
+    const newDigits = [...otpDigits];
+    newDigits[index] = value.slice(-1);
+    setOtpDigits(newDigits);
+
+    // Auto-focus next input box
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData("text").trim();
+    if (/^\d{6}$/.test(pastedText)) {
+      const digits = pastedText.split("");
+      setOtpDigits(digits);
+      otpInputRefs.current[5]?.focus();
+    }
+  };
+
   const sendOtp = async () => {
     if (!email.trim()) return toast.warning("Please enter email address ⚠️");
 
@@ -41,6 +72,7 @@ function OtpReset() {
       toast.success("OTP sent successfully to your email 📧");
       setOtpSent(true);
       startTimer();
+      otpInputRefs.current[0]?.focus();
     } catch (err) {
       toast.error(err.response?.data || "Failed to send OTP ❌");
     }
@@ -48,8 +80,9 @@ function OtpReset() {
 
   const verifyOtp = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !otp.trim() || !password.trim()) {
-      return toast.warning("Please fill in all required fields ⚠️");
+    const fullOtp = otpDigits.join("");
+    if (!email.trim() || fullOtp.length < 6 || !password.trim()) {
+      return toast.warning("Please fill in all 6 OTP digits and new password ⚠️");
     }
 
     try {
@@ -57,7 +90,7 @@ function OtpReset() {
 
       const res = await axios.post(
         "https://ecommerce-backend-1-tsra.onrender.com/auth/verify-otp",
-        { email, otp, password }
+        { email, otp: fullOtp, password }
       );
 
       toast.success(res.data || "Password reset successfully! ✅");
@@ -70,14 +103,11 @@ function OtpReset() {
 
   return (
     <div className="auth-page-container">
-      {/* Blurred Floating Circles (Background Glow) */}
       <div className="auth-floating-circle auth-floating-circle-1"></div>
       <div className="auth-floating-circle auth-floating-circle-2"></div>
       <div className="auth-floating-circle auth-floating-circle-3"></div>
 
-      {/* Centered Glassmorphism Card */}
       <div className="auth-card">
-        {/* Brand Badge */}
         <div className="auth-brand-badge" aria-hidden="true">
           
         </div>
@@ -86,7 +116,7 @@ function OtpReset() {
         <p className="auth-subtitle">Verify your email and set a new password.</p>
 
         <form onSubmit={verifyOtp} noValidate>
-          {/* Email Field */}
+          {/* EMAIL FIELD */}
           <div className="auth-input-wrapper">
             <label htmlFor="otp-email" className="auth-label">
               Email Address
@@ -113,24 +143,29 @@ function OtpReset() {
             </div>
           </div>
 
-          {/* OTP Field */}
+          {/* 6 INDIVIDUAL OTP DIGIT BOXES */}
           <div className="auth-input-wrapper">
-            <label htmlFor="otp-code" className="auth-label">
-              Enter 6-Digit OTP
-            </label>
-            <input
-              id="otp-code"
-              type="text"
-              className="auth-input font-monospace text-center fw-bold"
-              placeholder="e.g. 123456"
-              maxLength="6"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              required
-            />
+            <label className="auth-label">Enter 6-Digit OTP</label>
+            <div className="d-flex gap-2 justify-content-between mb-2">
+              {otpDigits.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => (otpInputRefs.current[index] = el)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength="1"
+                  className="auth-input text-center fw-bold fs-5 p-0"
+                  style={{ width: "42px", height: "50px" }}
+                  value={digit}
+                  onChange={(e) => handleOtpDigitChange(index, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                  onPaste={handleOtpPaste}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* New Password Field */}
+          {/* NEW PASSWORD FIELD */}
           <div className="auth-input-wrapper mb-4">
             <label htmlFor="otp-password" className="auth-label">
               New Password
@@ -152,7 +187,7 @@ function OtpReset() {
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? "👁️" : "👁️‍🗨️"}
+                {showPassword ? "👁️" : "🙈"}
               </button>
             </div>
           </div>
@@ -161,7 +196,7 @@ function OtpReset() {
             {loading ? (
               <>
                 <span className="auth-spinner" aria-hidden="true"></span>
-                Verifying OTP...
+                Resetting Password...
               </>
             ) : (
               "Verify & Reset Password ✅"

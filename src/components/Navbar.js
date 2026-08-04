@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useContext, useRef } from "react";
+import { toast } from "react-toastify";
 import { WishlistContext } from "../context/WishlistContext";
 import { CartContext } from "../pages/CartContext";
 import "./Navbar.css";
@@ -34,13 +35,16 @@ function Navbar() {
   const [token, setToken] = useState("");
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   // Search Suggestions State
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
   const searchRef = useRef(null);
+  const profileDropdownRef = useRef(null);
 
   // Info Modal states for Settings, About, Contact
   const [activeModal, setActiveModal] = useState(null);
@@ -60,17 +64,16 @@ function Navbar() {
     window.addEventListener("storage", updateNavbar);
 
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener("scroll", handleScroll);
 
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowSuggestions(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target)) {
+        setIsProfileDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -118,11 +121,22 @@ function Navbar() {
     }
   };
 
+  const handleProtectedClick = (e, path) => {
+    const currentToken = localStorage.getItem("token");
+    if (!currentToken) {
+      e.preventDefault();
+      setIsNavOpen(false);
+      setIsProfileDropdownOpen(false);
+      navigate("/login", { state: { from: path } });
+    }
+  };
+
   const handleLogout = () => {
     localStorage.clear();
-    sessionStorage.removeItem("products_cache");
+    sessionStorage.clear();
     window.dispatchEvent(new Event("authChange"));
-    navigate("/login");
+    toast.info("👋 Logged out successfully.");
+    navigate("/home");
   };
 
   const isActive = (path) => {
@@ -139,7 +153,6 @@ function Navbar() {
         : "text-dark hover-bg-light"
     }`;
 
-  // Helper to highlight matching text in search suggestions
   const renderHighlightedText = (text, query) => {
     if (!query.trim()) return text;
     const parts = text.split(new RegExp(`(${query})`, "gi"));
@@ -154,7 +167,6 @@ function Navbar() {
     );
   };
 
-  // Touch handlers for swipe to close drawer
   const handleTouchStart = (e) => {
     setTouchStartX(e.touches[0].clientX);
   };
@@ -177,9 +189,7 @@ function Navbar() {
         }`}
       >
         <div className="container-fluid px-0">
-          {/* ==========================================
-              DESKTOP NAVBAR HEADER (>= 992px) ONLY
-              ========================================== */}
+          {/* DESKTOP NAVBAR HEADER (>= 992px) ONLY */}
           <div className="d-none d-lg-flex align-items-center justify-content-between w-100">
             {/* BRAND LOGO */}
             <Link
@@ -254,7 +264,11 @@ function Navbar() {
                   <Link to="/products" className={linkClass("/products")}>
                     Products
                   </Link>
-                  <Link to="/wishlist" className={`${linkClass("/wishlist")} position-relative`}>
+                  <Link
+                    to="/wishlist"
+                    className={`${linkClass("/wishlist")} position-relative`}
+                    onClick={(e) => handleProtectedClick(e, "/wishlist")}
+                  >
                     Wishlist ❤️
                     {wishlistCount > 0 && (
                       <span className="badge rounded-pill bg-danger ms-1" style={{ fontSize: "10px" }}>
@@ -270,11 +284,13 @@ function Navbar() {
                       </span>
                     )}
                   </Link>
-                  {token && (
-                    <Link to="/orders" className={linkClass("/orders")}>
-                      Orders 📦
-                    </Link>
-                  )}
+                  <Link
+                    to="/orders"
+                    className={linkClass("/orders")}
+                    onClick={(e) => handleProtectedClick(e, "/orders")}
+                  >
+                    Orders 📦
+                  </Link>
                 </>
               )}
 
@@ -289,20 +305,20 @@ function Navbar() {
                   <Link to="/admin/inventory" className={linkClass("/admin/inventory")}>
                     Inventory
                   </Link>
-                  <Link to="/admin/users" className={linkClass("/admin/users")}>
-                    Users
-                  </Link>
                   <Link to="/admin/customizations" className={linkClass("/admin/customizations")}>
                     Customizations
+                  </Link>
+                  <Link to="/admin/coupons" className={linkClass("/admin/coupons")}>
+                    Coupons
                   </Link>
                 </div>
               )}
 
               {token ? (
-                <div className="d-flex align-items-center gap-2 ms-2">
-                  <Link
-                    to="/profile"
-                    className="d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-light text-dark fw-semibold text-sm hover-bg"
+                <div className="position-relative ms-2" ref={profileDropdownRef}>
+                  <button
+                    className="btn btn-light rounded-pill px-3 py-1.5 fw-semibold text-sm d-flex align-items-center gap-2 border shadow-sm"
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                   >
                     <div
                       className="rounded-circle bg-dark text-white d-flex align-items-center justify-content-center fw-bold"
@@ -311,14 +327,60 @@ function Navbar() {
                       {username ? username.charAt(0).toUpperCase() : "U"}
                     </div>
                     <span>{username}</span>
-                  </Link>
-
-                  <button
-                    className="btn btn-outline-danger btn-sm rounded-pill px-3"
-                    onClick={handleLogout}
-                  >
-                    Logout
+                    <small style={{ fontSize: "10px" }}>▼</small>
                   </button>
+
+                  {/* DESKTOP PROFILE DROPDOWN */}
+                  {isProfileDropdownOpen && (
+                    <div
+                      className="position-absolute end-0 top-100 mt-2 bg-white rounded-4 shadow-lg border p-2 overflow-hidden"
+                      style={{ width: "200px", zIndex: 1050 }}
+                    >
+                      <div className="px-3 py-2 border-bottom mb-1">
+                        <small className="text-muted d-block text-xs">Logged in as</small>
+                        <strong className="text-dark text-truncate d-block">{username}</strong>
+                      </div>
+
+                      <Link
+                        to="/profile"
+                        className="dropdown-item rounded-3 px-3 py-2 text-sm text-dark d-flex align-items-center justify-content-between"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <span>👤 My Profile</span>
+                        <span>→</span>
+                      </Link>
+
+                      <Link
+                        to="/orders"
+                        className="dropdown-item rounded-3 px-3 py-2 text-sm text-dark d-flex align-items-center justify-content-between"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <span>📦 Orders</span>
+                        <span>→</span>
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        className="dropdown-item rounded-3 px-3 py-2 text-sm text-dark d-flex align-items-center justify-content-between"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <span>❤️ Wishlist</span>
+                        <span>→</span>
+                      </Link>
+
+                      <hr className="my-1" />
+
+                      <button
+                        className="dropdown-item rounded-3 px-3 py-2 text-sm text-danger fw-bold d-flex align-items-center justify-content-between w-100"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          handleLogout();
+                        }}
+                      >
+                        <span>👋 Logout</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="d-flex align-items-center gap-2 ms-2">
@@ -333,11 +395,8 @@ function Navbar() {
             </div>
           </div>
 
-          {/* ==========================================
-              MOBILE HEADER LAYOUT (< 992px ONLY)
-              ========================================== */}
+          {/* MOBILE HEADER LAYOUT (< 992px ONLY) */}
           <div className="d-flex d-lg-none mobile-header-container">
-            {/* ROW 1: BRAND LOGO + HAMBURGER BUTTON */}
             <div className="mobile-top-bar">
               <Link
                 className="navbar-brand fw-bold text-dark fs-4 d-flex align-items-center gap-2"
@@ -363,7 +422,6 @@ function Navbar() {
               </button>
             </div>
 
-            {/* ROW 2: FULL-WIDTH ROUNDED SEARCH BAR */}
             <div className="mobile-search-row position-relative" ref={searchRef}>
               <form onSubmit={handleSearchSubmit}>
                 <div className="position-relative">
@@ -383,7 +441,6 @@ function Navbar() {
                 </div>
               </form>
 
-              {/* SEARCH SUGGESTIONS DROPDOWN (MOBILE) */}
               {showSuggestions && (
                 <div
                   className="position-absolute top-100 start-0 w-100 bg-white rounded-4 shadow-lg border mt-1 overflow-hidden"
@@ -414,9 +471,7 @@ function Navbar() {
         </div>
       </nav>
 
-      {/* ==========================================
-          MOBILE SLIDE DRAWER MENU OVERLAY (< 992px ONLY)
-          ========================================== */}
+      {/* MOBILE SLIDE DRAWER MENU OVERLAY (< 992px ONLY) */}
       <div
         className={`drawer-overlay d-lg-none ${isNavOpen ? "open" : ""}`}
         onClick={() => setIsNavOpen(false)}
@@ -427,7 +482,6 @@ function Navbar() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
         >
-          {/* DRAWER HEADER */}
           <div className="drawer-header">
             <div className="d-flex align-items-center gap-2 fw-bold text-dark fs-5">
               <span
@@ -445,7 +499,6 @@ function Navbar() {
             ></button>
           </div>
 
-          {/* DRAWER BODY NAV LIST */}
           <div className="drawer-body">
             <Link
               to="/home"
@@ -468,7 +521,10 @@ function Navbar() {
             <Link
               to="/wishlist"
               className={`drawer-link ${isActive("/wishlist") ? "active" : ""}`}
-              onClick={() => setIsNavOpen(false)}
+              onClick={(e) => {
+                handleProtectedClick(e, "/wishlist");
+                setIsNavOpen(false);
+              }}
             >
               <span>❤️ Wishlist</span>
               {wishlistCount > 0 ? (
@@ -491,27 +547,29 @@ function Navbar() {
               )}
             </Link>
 
-            {token && (
-              <Link
-                to="/orders"
-                className={`drawer-link ${isActive("/orders") ? "active" : ""}`}
-                onClick={() => setIsNavOpen(false)}
-              >
-                <span>📦 My Orders</span>
-                <span>→</span>
-              </Link>
-            )}
+            <Link
+              to="/orders"
+              className={`drawer-link ${isActive("/orders") ? "active" : ""}`}
+              onClick={(e) => {
+                handleProtectedClick(e, "/orders");
+                setIsNavOpen(false);
+              }}
+            >
+              <span>📦 My Orders</span>
+              <span>→</span>
+            </Link>
 
-            {token && (
-              <Link
-                to="/profile"
-                className={`drawer-link ${isActive("/profile") ? "active" : ""}`}
-                onClick={() => setIsNavOpen(false)}
-              >
-                <span>👤 Profile</span>
-                <span>→</span>
-              </Link>
-            )}
+            <Link
+              to="/profile"
+              className={`drawer-link ${isActive("/profile") ? "active" : ""}`}
+              onClick={(e) => {
+                handleProtectedClick(e, "/profile");
+                setIsNavOpen(false);
+              }}
+            >
+              <span>👤 Profile</span>
+              <span>→</span>
+            </Link>
 
             {token && role === "ROLE_ADMIN" && (
               <Link
@@ -563,7 +621,6 @@ function Navbar() {
             </div>
           </div>
 
-          {/* DRAWER FOOTER (AUTH CONTROLS) */}
           <div className="drawer-footer">
             {token ? (
               <div>
@@ -613,9 +670,7 @@ function Navbar() {
         </div>
       </div>
 
-      {/* ==========================================
-          INFORMATIONAL MODAL (Settings, About, Contact)
-          ========================================== */}
+      {/* INFORMATIONAL MODAL */}
       {activeModal && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3 p-3"
@@ -641,31 +696,21 @@ function Navbar() {
                     Order Delivery Notifications
                   </label>
                 </div>
-                <div className="form-check form-switch mb-3">
-                  <input className="form-check-input" type="checkbox" id="offerNotif" defaultChecked />
-                  <label className="form-check-label text-sm fw-semibold text-dark" htmlFor="offerNotif">
-                    Promotional Coupon Offers
-                  </label>
-                </div>
               </div>
             )}
 
             {activeModal === "About" && (
               <div>
                 <p className="text-secondary small mb-2">
-                  <strong>HOODIFY</strong> is a luxury streetwear and custom apparel platform built with React and Spring Boot.
-                </p>
-                <p className="text-secondary small mb-0">
-                  Engineered for maximum sustainability, heavy fabric durability, and custom real-time design printing.
+                  <strong>HOODIFY</strong> is a luxury streetwear and custom apparel platform.
                 </p>
               </div>
             )}
 
             {activeModal === "Contact" && (
               <div>
-                <p className="text-secondary small mb-2">Need assistance with your order or custom print artwork?</p>
+                <p className="text-secondary small mb-2">Need assistance with your order?</p>
                 <p className="small mb-1">📧 Email: <strong>support@hoodify.com</strong></p>
-                <p className="small mb-0">📞 Phone: <strong>+1 (800) 555-HOOD</strong></p>
               </div>
             )}
 

@@ -81,12 +81,12 @@ function Orders() {
 
   return (
     <div className="container-fluid py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
-          <h2 className="fw-extrabold text-dark m-0">Admin Order Management 📦</h2>
-          <p className="text-muted small m-0">Manage customer order statuses & fulfillment workflows</p>
+          <h2 className="fw-extrabold text-dark m-0 fs-4">Order & Customer Fulfillment 📦</h2>
+          <p className="text-muted small m-0">View customer order details & update shipping status</p>
         </div>
-        <button className="btn btn-outline-dark btn-sm rounded-pill" onClick={fetchOrders}>
+        <button className="btn btn-outline-dark btn-sm rounded-pill px-3 fw-bold" onClick={fetchOrders}>
           Refresh Orders 🔄
         </button>
       </div>
@@ -98,7 +98,7 @@ function Orders() {
           </div>
         </div>
       ) : orders.length === 0 ? (
-        <div className="card border-0 shadow-sm p-5 text-center rounded-4">
+        <div className="card border-0 shadow-sm p-5 text-center rounded-4 bg-white">
           <p className="text-muted fs-5 m-0">No customer orders found.</p>
         </div>
       ) : (
@@ -108,77 +108,95 @@ function Orders() {
               const isCustom = Boolean(o.designImageUrl || o.customText);
               const options = isCustom ? CUSTOM_STATUS_OPTIONS : NORMAL_STATUS_OPTIONS;
               const currentStatusUpper = (o.status || "").trim().toUpperCase();
+              const customerName = o.deliveryName || o.username || "Customer";
+              const customerPhone = o.deliveryPhone || o.phone || "Not provided";
+              const customerEmail = o.email || o.userEmail || `${(o.username || "user").toLowerCase()}@hoodify.com`;
+              const formattedDate = o.orderDate ? new Date(o.orderDate).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "Recent";
 
               return (
-                <div key={o.id} className="card border-0 shadow-sm p-3 rounded-4 bg-white">
-                  <div className="row align-items-center g-3">
-                    <div className="col-12 col-md-3 d-flex align-items-center gap-3">
+                <div key={o.id} className="card border-0 shadow-sm p-3 p-md-4 rounded-4 bg-white">
+                  <div className="row align-items-start g-3">
+                    
+                    {/* PRODUCT & CUSTOM DESIGN PREVIEW */}
+                    <div className="col-12 col-md-4 d-flex align-items-start gap-3">
                       {o.designImageUrl ? (
-                        <div className="text-center position-relative">
+                        <div className="text-center position-relative flex-shrink-0">
                           <img
                             src={o.designImageUrl}
                             alt="Custom Design"
                             className="rounded-3 border border-primary cursor-pointer shadow-sm"
-                            style={{ width: "60px", height: "60px", objectFit: "cover", cursor: "pointer" }}
+                            style={{ width: "64px", height: "64px", objectFit: "cover" }}
                             onClick={() => setPreviewImage(o.designImageUrl)}
                             title="Click to enlarge design"
                           />
-                          <small className="badge bg-primary d-block mt-1" style={{ fontSize: "9px" }}>Custom Print</small>
+                          <small className="badge bg-primary d-block mt-1 text-xs">Custom Print</small>
                         </div>
                       ) : (
-                        <div className="rounded-3 bg-light p-3 fw-bold text-dark text-center" style={{ width: "60px", height: "60px" }}>
+                        <div className="rounded-3 bg-light p-3 fw-bold text-dark text-center flex-shrink-0" style={{ width: "64px", height: "64px" }}>
                           📦
                         </div>
                       )}
 
                       <div>
-                        <h6 className="fw-bold text-dark mb-0 text-truncate">{o.productName}</h6>
-                        <small className="text-muted d-block">Order #{o.id}</small>
-                        <small className="text-muted d-block">Customer: <b>{o.deliveryName || o.username}</b></small>
-                        {o.deliveryPhone && <small className="text-muted d-block">Phone: <b>{o.deliveryPhone}</b></small>}
+                        <h6 className="fw-bold text-dark mb-1 text-truncate" style={{ maxWidth: "200px" }}>{o.productName}</h6>
+                        <span className="badge bg-dark text-white me-1">Order #{o.id}</span>
+                        {o.size && <span className="badge bg-light text-dark border">Size: {o.size}</span>}
+                        <small className="text-muted d-block mt-1">Date: {formattedDate}</small>
+                      </div>
+                    </div>
+
+                    {/* COMPACT CUSTOMER DETAILS SECTION (SPECIFIC TO THIS ORDER) */}
+                    <div className="col-12 col-md-4 bg-light p-3 rounded-3 border">
+                      <h6 className="fw-bold text-dark mb-1 small">Customer Info 👤</h6>
+                      <div className="small text-secondary">
+                        <div><strong>Name:</strong> {customerName}</div>
+                        <div><strong>Email:</strong> {customerEmail}</div>
+                        <div><strong>Phone:</strong> {customerPhone}</div>
+                        {o.deliveryAddress && <div><strong>Address:</strong> {o.deliveryAddress}</div>}
                         {o.deliveryCity && (
-                          <small className="text-primary d-block fw-semibold" style={{ fontSize: "11px" }}>
+                          <div className="text-dark fw-semibold mt-1" style={{ fontSize: "11px" }}>
                             📍 {o.deliveryCity}, {o.deliveryState} - {o.deliveryPincode}
-                          </small>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="col-6 col-md-2">
-                      <small className="text-muted d-block">Price & Qty</small>
-                      <span className="fw-bold text-dark">₹{o.totalPrice}</span>
-                      <small className="text-muted"> ({o.quantity} qty)</small>
+                    {/* PAYMENT & ORDER STATUS */}
+                    <div className="col-12 col-md-4">
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <div>
+                          <small className="text-muted d-block">Grand Total</small>
+                          <span className="fw-extrabold text-dark fs-5">₹{o.totalPrice}</span>
+                          <small className="text-muted"> ({o.quantity} qty)</small>
+                        </div>
+                        <div>
+                          <small className="text-muted d-block">Payment</small>
+                          <span className="badge bg-success bg-opacity-10 text-success fw-bold">PAID</span>
+                        </div>
+                      </div>
+
                       {o.couponCode && (
-                        <small className="d-block text-success fw-bold font-monospace mt-1">
+                        <small className="d-block text-success fw-bold font-monospace mb-2" style={{ fontSize: "11px" }}>
                           🎟️ {o.couponCode} (-₹{o.discountAmount})
                         </small>
                       )}
+
+                      <div className="mt-2">
+                        <label className="form-label small text-muted fw-semibold mb-1 d-block">Order Status</label>
+                        <select
+                          className="form-select form-select-sm rounded-pill border-0 bg-light shadow-sm fw-semibold"
+                          value={currentStatusUpper}
+                          onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                        >
+                          {options.map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="col-6 col-md-3">
-                      <small className="text-muted d-block mb-1">Current Status</small>
-                      <span className={`badge rounded-pill px-3 py-1.5 ${
-                        currentStatusUpper === 'DELIVERED' ? 'bg-success' : currentStatusUpper === 'CANCELLED' ? 'bg-danger' : 'bg-dark'
-                      }`}>
-                        {o.status}
-                      </span>
-                    </div>
-
-                    {/* STATUS SELECTOR DROPDOWN */}
-                    <div className="col-12 col-md-4">
-                      <label className="form-label small text-muted fw-semibold mb-1">Update Status</label>
-                      <select
-                        className="form-select form-select-sm rounded-pill border-0 bg-light shadow-sm fw-semibold"
-                        value={currentStatusUpper}
-                        onChange={(e) => handleStatusChange(o.id, e.target.value)}
-                      >
-                        {options.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
                   </div>
                 </div>
               );
@@ -201,10 +219,11 @@ function Orders() {
       {/* ENLARGE PREVIEW MODAL */}
       {previewImage && (
         <div
-          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3"
+          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-75 d-flex align-items-center justify-content-center z-3 p-3"
+          style={{ zIndex: 1060 }}
           onClick={() => setPreviewImage(null)}
         >
-          <div className="bg-white p-4 rounded-4 text-center shadow-lg" style={{ maxWidth: "500px" }}>
+          <div className="bg-white p-4 rounded-4 text-center shadow-lg" style={{ maxWidth: "500px", width: "100%" }}>
             <h6 className="fw-bold mb-3">Custom Uploaded Artwork</h6>
             <img
               src={previewImage}

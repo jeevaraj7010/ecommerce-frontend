@@ -5,6 +5,9 @@ import "react-toastify/dist/ReactToastify.css";
 import { ProductProvider } from "./context/ProductContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import Navbar from "./components/Navbar";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -20,7 +23,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import OtpReset from "./pages/OtpReset";
 import OrderSuccess from "./pages/OrderSuccess";
 
-// ✅ Admin imports
+// Admin imports
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import AdminOrders from "./admin/Orders";
@@ -36,38 +39,37 @@ function App() {
         <BrowserRouter>
           <Navbar />
 
-          {/* 🔥 GLOBAL TOAST */}
+          {/* GLOBAL TOAST */}
           <ToastContainer position="top-right" autoClose={2000} />
 
           <Routes>
 
-            {/* public pages */}
+            {/* PUBLIC SHOPPING PAGES */}
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/profile" element={<Profile />} />
             <Route path="/products" element={<Products />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-
             <Route path="/order-success" element={<OrderSuccess />} />
 
-            {/* 🔥 OTP FLOW */}
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/otp-reset" element={<OtpReset />} />
+            {/* PUBLIC AUTHENTICATION PAGES (Redirects logged-in users to /home) */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/otp-reset" element={<OtpReset />} />
+            </Route>
 
-            {/* auth pages */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* PROTECTED AUTHENTICATED PAGES (Requires valid token) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/orders" element={<Orders />} />
+            </Route>
 
-            {/* protected flow */}
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/orders" element={<Orders />} />
-
-            {/* admin old */}
+            {/* ADMIN DASHBOARD */}
             <Route path="/add-product" element={<AddProduct />} />
-
-            {/* 🔥 ADMIN DASHBOARD */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="orders" element={<AdminOrders />} />
@@ -84,5 +86,4 @@ function App() {
   );
 }
 
-
-export default App; 
+export default App;

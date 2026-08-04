@@ -20,23 +20,26 @@ export const CartProvider = ({ children }) => {
     }
   }, [cartItems]);
 
-  // ✅ Add to cart (matches product.id AND customImageUrl)
-  const addToCart = (product) => {
+  // ✅ Add to cart (matches product.id, size, variantId, AND customImageUrl)
+  const addToCart = (product, quantityToAdd = 1) => {
+    const qty = quantityToAdd > 0 ? quantityToAdd : 1;
     setCartItems((prev) => {
       const existIndex = prev.findIndex(
         (item) =>
           item.id === product.id &&
+          (item.variantId || null) === (product.variantId || null) &&
+          (item.size || "") === (product.size || "") &&
           (item.customImageUrl || "") === (product.customImageUrl || "")
       );
 
       if (existIndex > -1) {
         return prev.map((item, index) =>
           index === existIndex
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + qty }
             : item
         );
       } else {
-        return [...prev, { ...product, quantity: 1 }];
+        return [...prev, { ...product, quantity: qty }];
       }
     });
   };

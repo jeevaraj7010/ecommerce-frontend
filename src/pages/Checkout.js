@@ -113,6 +113,8 @@ function Checkout() {
           return axios.post(
             `https://ecommerce-backend-1-tsra.onrender.com/api/orders/${item.id}/${item.quantity}`,
             {
+              variantId: item.variantId || null,
+              size: item.size || null,
               designImageUrl: item.customImageUrl || null,
               customImageUrl: item.customImageUrl || null,
               customText: item.customText || null,
@@ -250,6 +252,11 @@ function Checkout() {
                     )}
                     <div>
                       <h6 className="mb-0 fw-bold text-dark text-truncate" style={{ maxWidth: "160px" }}>{item.name}</h6>
+                      {item.size && (
+                        <small className="badge bg-dark text-white me-1 px-2 py-0.5" style={{ fontSize: "11px" }}>
+                          Size: {item.size}
+                        </small>
+                      )}
                       {item.customText && (
                         <small className="badge bg-light text-dark border d-block my-1 text-truncate" style={{ maxWidth: "150px" }}>
                           Text: "{item.customText}"

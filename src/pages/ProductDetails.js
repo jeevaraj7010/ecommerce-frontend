@@ -1,20 +1,29 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../api/axios";
 import { CartContext } from "./CartContext";
 import { WishlistContext } from "../context/WishlistContext";
 import { toast } from "react-toastify";
 import Pagination from "../components/Pagination";
+import DeliveryCheck from "../components/address/DeliveryCheck";
 
 const REVIEWS_PER_PAGE = 5;
+const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
 
 function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useContext(CartContext);
-  const { isWishlisted, toggleWishlist } = useContext(WishlistContext);
+  const { isWishlisted, toggleWishlist } = useContext(WishlistContext) || {
+    isWishlisted: () => false,
+    toggleWishlist: () => {},
+  };
 
   const [product, setProduct] = useState(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [quantitySelected, setQuantitySelected] = useState(1);
+
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
@@ -33,6 +42,13 @@ function ProductDetails() {
   const [isDragging, setIsDragging] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
 
+  // Mobile collapsible description
+  const [descriptionOpen, setDescriptionOpen] = useState(true);
+
+  // Hover zoom state
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+
   const [reviewPage, setReviewPage] = useState(1);
 
   const username = localStorage.getItem("username");
@@ -40,28 +56,36 @@ function ProductDetails() {
   const role = localStorage.getItem("role");
 
   const fetchReviews = useCallback((sortOpt = reviewSort) => {
-    axios
-      .get(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/${id}?sort=${sortOpt}`)
+    API.get(`/api/reviews/${id}?sort=${sortOpt}`)
       .then((res) => setReviews(res.data || []))
       .catch(console.error);
   }, [id, reviewSort]);
 
   useEffect(() => {
-    axios
-      .get(`https://ecommerce-backend-1-tsra.onrender.com/api/products/${id}`)
-      .then((res) => setProduct(res.data))
-      .catch(console.error);
+    API.get(`/api/products/${id}`)
+      .then((res) => {
+        setProduct(res.data);
+        // Pre-select first available size if variants enabled
+        if (res.data?.variants && res.data.variants.length > 0) {
+          const firstAvail = res.data.variants.find((v) => v.available);
+          if (firstAvail) {
+            setSelectedSize(firstAvail.size);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to load product details ❌");
+      });
 
     fetchReviews();
 
-    axios
-      .get(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/average/${id}`)
+    API.get(`/api/reviews/average/${id}`)
       .then((res) => setAvg(res.data || 0))
       .catch(console.error);
 
     if (username) {
-      axios
-        .get(`https://ecommerce-backend-1-tsra.onrender.com/api/reviews/verified/${id}/${username}`)
+      API.get(`/api/reviews/verified/${id}/${username}`)
         .then((res) => setIsVerifiedBuyer(res.data?.verified === true))
         .catch(console.error);
     }
@@ -70,6 +94,13 @@ function ProductDetails() {
   const handleImageError = (e) => {
     e.target.onerror = null;
     e.target.src = "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80";
+  };
+
+  const handleMouseMove = (e) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
   };
 
   if (!product) {
@@ -82,15 +113,38 @@ function ProductDetails() {
     );
   }
 
+  const galleryImages = (product.images && product.images.length > 0)
+    ? product.images
+    : [product.imageUrl || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80"];
+
+  const currentMainImage = galleryImages[selectedImageIndex] || galleryImages[0];
+
   const isCustomizable =
     product.customizable === true ||
     (product.category && product.category.toLowerCase() === "custom clothing") ||
     (product.name && product.name.toLowerCase().includes("custom"));
 
-  const isOut = product.quantity <= 0;
+  const hasVariants = Boolean(product.variantEnabled) || (product.variants && product.variants.length > 0);
+
+  // Variant map
+  const variantMap = {};
+  if (product.variants) {
+    product.variants.forEach((v) => {
+      variantMap[v.size.toUpperCase()] = v;
+    });
+  }
+
+  // Stock status check
+  const selectedVariantObj = selectedSize ? variantMap[selectedSize.toUpperCase()] : null;
+  const isOut = hasVariants
+    ? (selectedVariantObj ? !selectedVariantObj.available : false)
+    : product.quantity <= 0;
+
+  const mrpPrice = Math.round(product.price * 1.5);
+  const discountPct = Math.round(((mrpPrice - product.price) / mrpPrice) * 100);
   const wishlisted = isWishlisted(product.id);
 
-  // File Validation: JPG, PNG, WEBP, Max 5MB
+  // File Upload Logic for Custom Hoodie
   const processAndCompressImage = (file) => {
     return new Promise((resolve, reject) => {
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -98,22 +152,18 @@ function ProductDetails() {
         reject("Invalid file format. Supported formats: JPG, PNG, WEBP ❌");
         return;
       }
-
       if (file.size > 5 * 1024 * 1024) {
         reject("File size exceeds maximum limit of 5 MB ❌");
         return;
       }
-
       const img = new Image();
       const objectUrl = URL.createObjectURL(file);
-
       img.onload = () => {
         URL.revokeObjectURL(objectUrl);
         const canvas = document.createElement("canvas");
         const MAX_DIM = 1200;
         let width = img.width;
         let height = img.height;
-
         if (width > MAX_DIM || height > MAX_DIM) {
           if (width > height) {
             height = Math.round((height * MAX_DIM) / width);
@@ -123,62 +173,47 @@ function ProductDetails() {
             height = MAX_DIM;
           }
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL("image/webp", 0.85);
-        resolve(compressedDataUrl);
+        resolve(canvas.toDataURL("image/webp", 0.85));
       };
-
       img.onerror = () => {
         URL.revokeObjectURL(objectUrl);
         reject("Failed to read image file ❌");
       };
-
       img.src = objectUrl;
     });
   };
 
   const handleSelectedFile = async (file) => {
     if (!file) return;
-
     setCustomFile(file);
     const localPreview = URL.createObjectURL(file);
     setCustomPreview(localPreview);
-
     setIsUploading(true);
     setUploadProgress(30);
 
     try {
       const compressedUrl = await processAndCompressImage(file);
       setUploadProgress(70);
-
       const currentToken = localStorage.getItem("token");
       if (currentToken) {
         try {
           const formData = new FormData();
           formData.append("productId", product.id);
           formData.append("image", file);
-          if (customText.trim()) {
-            formData.append("customText", customText);
-          }
+          if (customText.trim()) formData.append("customText", customText);
 
-          const res = await axios.post(
-            "https://ecommerce-backend-1-tsra.onrender.com/api/customization/upload",
-            formData,
-            { headers: { Authorization: `Bearer ${currentToken}`, "Content-Type": "multipart/form-data" } }
-          );
-
-          if (res.data && res.data.imageUrl) {
-            setUploadedCustomUrl(res.data.imageUrl);
-          }
+          const res = await API.post("/api/customization/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+          if (res.data?.imageUrl) setUploadedCustomUrl(res.data.imageUrl);
         } catch (err) {
-          console.error("Cloudinary endpoint upload fallback:", err);
+          console.error("Customization upload error:", err);
         }
       }
-
       setUploadProgress(100);
       setCustomImageUrls([compressedUrl]);
       setIsUploading(false);
@@ -191,34 +226,14 @@ function ProductDetails() {
     }
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleSelectedFile(e.dataTransfer.files[0]);
+  const handleAddToCartAction = (navigateToCartAfter = false) => {
+    if (hasVariants && !selectedSize) {
+      toast.error("Please select a size ❌");
+      return;
     }
-  };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleRemoveCustomImage = () => {
-    setCustomImageUrls([]);
-    setCustomFile(null);
-    setCustomPreview("");
-    setUploadedCustomUrl("");
-  };
-
-  const handleAddToCart = async () => {
     if (isOut) {
-      toast.error("This product is currently out of stock ❌");
+      toast.error("Selected size is out of stock ❌");
       return;
     }
 
@@ -229,42 +244,20 @@ function ProductDetails() {
 
     let finalImageUrl = uploadedCustomUrl || (customImageUrls.length > 0 ? customImageUrls[0] : customPreview);
 
-    if (isCustomizable && customFile && !uploadedCustomUrl) {
-      const currentToken = localStorage.getItem("token");
-      if (currentToken) {
-        try {
-          const formData = new FormData();
-          formData.append("productId", product.id);
-          formData.append("image", customFile);
-          if (customText.trim()) {
-            formData.append("customText", customText);
-          }
-
-          const res = await axios.post(
-            "https://ecommerce-backend-1-tsra.onrender.com/api/customization/upload",
-            formData,
-            { headers: { Authorization: `Bearer ${currentToken}`, "Content-Type": "multipart/form-data" } }
-          );
-
-          if (res.data && res.data.imageUrl) {
-            finalImageUrl = res.data.imageUrl;
-            setUploadedCustomUrl(res.data.imageUrl);
-          }
-        } catch (err) {
-          console.error("Customization upload error:", err);
-        }
-      }
-    }
-
-    const productToAdd = {
+    const itemToAdd = {
       ...product,
+      size: selectedSize || null,
+      variantId: selectedVariantObj ? selectedVariantObj.id : null,
       customImageUrl: finalImageUrl || null,
-      customImageUrls: finalImageUrl ? [finalImageUrl] : customImageUrls,
       customText: customText.trim() || null,
     };
 
-    addToCart(productToAdd);
-    toast.success(`${product.name} added to cart 🛒`);
+    addToCart(itemToAdd, quantitySelected);
+    toast.success(`${product.name} (${selectedSize || "Standard"}) added to cart 🛒`);
+
+    if (navigateToCartAfter) {
+      navigate("/cart");
+    }
   };
 
   const submitReview = () => {
@@ -278,12 +271,7 @@ function ProductDetails() {
       return;
     }
 
-    axios
-      .post(
-        "https://ecommerce-backend-1-tsra.onrender.com/api/reviews",
-        { productId: id, username, rating, comment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+    API.post("/api/reviews", { productId: id, username, rating, comment })
       .then(() => {
         toast.success("Review added ✅");
         fetchReviews(reviewSort);
@@ -300,85 +288,215 @@ function ProductDetails() {
 
   return (
     <div className="container py-4 py-md-5 pb-5 mb-5 mb-md-0">
+      {/* PRODUCT SECTION */}
       <div className="row g-4 g-md-5 align-items-start">
-        {/* PRODUCT & CUSTOM REAL-TIME PREVIEW IMAGE */}
+        
+        {/* LEFT COLUMN: MULTI-IMAGE GALLERY */}
         <div className="col-12 col-md-6">
-          <div className="card border-0 shadow-sm p-3 p-md-4 text-center rounded-5 bg-white position-relative overflow-hidden">
-            <div
-              className="position-relative d-flex align-items-center justify-content-center mx-auto rounded-4 overflow-hidden"
-              style={{ width: "100%", minHeight: "260px", maxHeight: "480px", backgroundColor: "#F9FAFB" }}
-            >
-              <img
-                src={product.imageUrl || "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=500&auto=format&fit=crop&q=80"}
-                alt={product.name}
-                className="img-fluid rounded-4 shadow-sm cursor-pointer"
-                style={{
-                  maxHeight: "450px",
-                  maxWidth: "100%",
-                  width: "auto",
-                  height: "auto",
-                  objectFit: "contain",
-                  display: "block",
-                  margin: "0 auto"
-                }}
-                loading="lazy"
-                onError={handleImageError}
-                onClick={() => setEnlargedImage(product.imageUrl)}
-                title="Click to zoom image"
-              />
-            </div>
-
-            {role !== "ROLE_ADMIN" && (
-              <button
-                className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow border-0 p-2 d-flex align-items-center justify-content-center"
-                style={{ width: "40px", height: "40px" }}
-                onClick={() => toggleWishlist(product)}
-                title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
-                aria-label="Toggle Wishlist"
-              >
-                <span style={{ fontSize: "18px", color: wishlisted ? "#EF4444" : "#aaa" }}>
-                  {wishlisted ? "❤️" : "🤍"}
-                </span>
-              </button>
+          <div className="d-flex flex-column-reverse flex-md-row gap-3">
+            
+            {/* THUMBNAIL LIST (Desktop & Mobile view) */}
+            {galleryImages.length > 1 && (
+              <div className="d-flex flex-row flex-md-column gap-2 overflow-auto justify-content-center justify-content-md-start" style={{ maxHeight: "480px" }}>
+                {galleryImages.map((img, idx) => (
+                  <img
+                    key={idx}
+                    src={img}
+                    alt={`Thumbnail ${idx + 1}`}
+                    className={`rounded-3 border cursor-pointer ${selectedImageIndex === idx ? "border-dark border-2 shadow-sm" : "opacity-75"}`}
+                    style={{ width: "64px", height: "64px", objectFit: "cover", transition: "all 0.2s" }}
+                    onClick={() => setSelectedImageIndex(idx)}
+                    loading="lazy"
+                    onError={handleImageError}
+                  />
+                ))}
+              </div>
             )}
+
+            {/* MAIN IMAGE DISPLAY WITH HOVER ZOOM */}
+            <div className="card border-0 shadow-sm p-3 p-md-4 text-center rounded-5 bg-white position-relative flex-grow-1 overflow-hidden">
+              <div
+                className="position-relative d-flex align-items-center justify-content-center mx-auto rounded-4 overflow-hidden"
+                style={{ width: "100%", minHeight: "280px", maxHeight: "480px", backgroundColor: "#F9FAFB", cursor: "zoom-in" }}
+                onMouseEnter={() => setIsZoomed(true)}
+                onMouseLeave={() => setIsZoomed(false)}
+                onMouseMove={handleMouseMove}
+                onClick={() => setEnlargedImage(currentMainImage)}
+              >
+                <img
+                  src={currentMainImage}
+                  alt={product.name}
+                  className="img-fluid rounded-4 shadow-sm"
+                  style={{
+                    maxHeight: "450px",
+                    maxWidth: "100%",
+                    objectFit: "contain",
+                    transition: isZoomed ? "none" : "transform 0.3s ease-in-out",
+                    transform: isZoomed ? "scale(2)" : "scale(1)",
+                    transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  }}
+                  loading="lazy"
+                  onError={handleImageError}
+                  title="Hover to zoom, click to expand"
+                />
+              </div>
+
+              {/* WISHLIST BUTTON */}
+              {role !== "ROLE_ADMIN" && (
+                <button
+                  className="position-absolute top-0 end-0 m-3 btn btn-light rounded-circle shadow border-0 p-2 d-flex align-items-center justify-content-center"
+                  style={{ width: "42px", height: "42px" }}
+                  onClick={() => toggleWishlist(product)}
+                  title={wishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                >
+                  <span style={{ fontSize: "20px", color: wishlisted ? "#EF4444" : "#aaa" }}>
+                    {wishlisted ? "❤️" : "🤍"}
+                  </span>
+                </button>
+              )}
+
+              {/* MOBILE IMAGE INDICATOR DOTS */}
+              {galleryImages.length > 1 && (
+                <div className="d-flex d-md-none justify-content-center gap-1.5 mt-3">
+                  {galleryImages.map((_, idx) => (
+                    <span
+                      key={idx}
+                      className={`rounded-circle ${selectedImageIndex === idx ? "bg-dark" : "bg-secondary opacity-50"}`}
+                      style={{ width: "8px", height: "8px", cursor: "pointer" }}
+                      onClick={() => setSelectedImageIndex(idx)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* DETAILS & CUSTOMIZATION CONTROLS */}
+        {/* RIGHT COLUMN: PRODUCT INFORMATION */}
         <div className="col-12 col-md-6">
           <span className="badge rounded-pill bg-dark text-white px-3 py-1.5 text-xs mb-2">
-            {product.category || "Premium Apparel"}
+            {product.category || "Fashion Apparel"}
           </span>
-          <h1 className="fw-extrabold text-dark mb-2 fs-3 fs-md-1" style={{ letterSpacing: "-0.5px" }}>
+          <h1 className="fw-extrabold text-dark mb-2 fs-3 fs-md-2" style={{ letterSpacing: "-0.5px" }}>
             {product.name}
           </h1>
-          <p className="text-secondary mb-3 small fs-md-6">{product.description}</p>
 
+          {/* RATING & REVIEWS */}
           <div className="d-flex align-items-center gap-3 mb-3">
             <div className="d-flex align-items-center text-warning fs-5">
               {"★".repeat(Math.round(avg))}
               <span className="ms-2 text-dark fs-6 fw-bold">({avg.toFixed(1)})</span>
             </div>
-            <span className="text-muted small">• {reviews.length} Reviews</span>
+            <span className="text-muted small">• {reviews.length} Customer Reviews</span>
           </div>
 
-          <h2 className="fw-extrabold text-dark mb-4 fs-2">₹{product.price}</h2>
+          {/* PRICING BREAKDOWN */}
+          <div className="d-flex align-items-baseline gap-3 mb-4">
+            <h2 className="fw-extrabold text-dark mb-0 fs-2">₹{product.price}</h2>
+            <span className="text-muted text-decoration-line-through fs-5">₹{mrpPrice}</span>
+            <span className="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 text-xs fw-bold">
+              {discountPct}% OFF
+            </span>
+          </div>
 
-          {/* 🎨 CUSTOM PRODUCT SECTION */}
+          {/* SIZE SELECTION UI */}
+          {hasVariants && (
+            <div className="mb-4">
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <label className="fw-bold text-dark fs-6">Select Size</label>
+                {selectedSize && (
+                  <span className="small text-success fw-semibold">
+                    Selected: {selectedSize}
+                  </span>
+                )}
+              </div>
+
+              <div className="d-flex flex-wrap gap-2">
+                {ALL_SIZES.map((sz) => {
+                  const varObj = variantMap[sz];
+                  const existsInCatalog = varObj !== undefined;
+                  const isAvailable = existsInCatalog && varObj.available;
+                  const isSelected = selectedSize === sz;
+
+                  return (
+                    <button
+                      key={sz}
+                      type="button"
+                      disabled={!isAvailable}
+                      className={`btn rounded-3 fw-bold position-relative text-uppercase transition-all ${
+                        isSelected
+                          ? "btn-dark shadow"
+                          : isAvailable
+                          ? "btn-outline-dark"
+                          : "btn-light text-muted border-secondary-subtle"
+                      }`}
+                      style={{
+                        minWidth: "52px",
+                        height: "46px",
+                        cursor: isAvailable ? "pointer" : "not-allowed",
+                        backgroundColor: !isAvailable ? "#E5E7EB" : undefined,
+                        opacity: !isAvailable ? 0.7 : 1,
+                        textDecoration: !isAvailable ? "line-through" : "none",
+                      }}
+                      onClick={() => isAvailable && setSelectedSize(sz)}
+                      title={!isAvailable ? `${sz} - Out Of Stock` : `Select ${sz}`}
+                    >
+                      {sz}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {hasVariants && !selectedSize && (
+                <small className="text-danger d-block mt-1">
+                  ⚠️ Size selection is mandatory for this product.
+                </small>
+              )}
+            </div>
+          )}
+
+          {/* QUANTITY SELECTOR */}
+          <div className="mb-4">
+            <label className="fw-bold text-dark fs-6 mb-2 d-block">Quantity</label>
+            <div className="d-flex align-items-center gap-2" style={{ maxWidth: "140px" }}>
+              <button
+                className="btn btn-outline-dark rounded-circle p-0 d-flex align-items-center justify-content-center"
+                style={{ width: "36px", height: "36px" }}
+                onClick={() => setQuantitySelected(Math.max(1, quantitySelected - 1))}
+              >
+                -
+              </button>
+              <span className="fw-bold fs-5 px-3">{quantitySelected}</span>
+              <button
+                className="btn btn-outline-dark rounded-circle p-0 d-flex align-items-center justify-content-center"
+                style={{ width: "36px", height: "36px" }}
+                onClick={() => setQuantitySelected(quantitySelected + 1)}
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          {/* CUSTOMIZABLE SECTION (preserved) */}
           {isCustomizable && (
             <div className="card border-0 bg-light p-3 p-md-4 rounded-4 mb-4 shadow-sm">
               <h5 className="fw-bold text-dark mb-1">Customize Your Product ✨</h5>
               <p className="small text-muted mb-3">Upload your artwork and add personalized custom text.</p>
 
-              {/* Drag and Drop Image Upload Zone */}
               <div
                 className={`border-2 border-dashed rounded-4 p-3 p-md-4 text-center bg-white transition-all ${
                   isDragging ? "border-primary bg-primary-subtle" : "border-gray-300"
                 }`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
                 style={{ cursor: "pointer" }}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleSelectedFile(e.dataTransfer.files[0]);
+                  }
+                }}
               >
                 <div className="fs-2 mb-1">🖼️</div>
                 <h6 className="fw-bold mb-1 text-sm">Drag & Drop Image Here</h6>
@@ -398,14 +516,12 @@ function ProductDetails() {
                 </label>
               </div>
 
-              {/* Upload Progress Bar */}
               {isUploading && (
                 <div className="progress mt-3" style={{ height: "6px" }}>
-                  <div className="progress-bar bg-dark" style={{ width: `${uploadProgress}%` }}></div>
+                  <div className="progress-bar bg-dark" style={{ width: `${uploadProgress}%` }} />
                 </div>
               )}
 
-              {/* Uploaded Preview */}
               {(customPreview || customImageUrls[0]) && (
                 <div className="d-flex align-items-center justify-content-between bg-white p-3 rounded-3 border mt-3">
                   <div className="d-flex align-items-center gap-3">
@@ -416,19 +532,18 @@ function ProductDetails() {
                       style={{ width: "48px", height: "48px", objectFit: "cover" }}
                     />
                     <div>
-                      <small className="fw-bold d-block text-dark">Custom Design Ready</small>
+                      <small className="fw-bold d-block text-dark">Custom Artwork Ready</small>
                       <small className="text-success" style={{ fontSize: "11px" }}>
                         ✓ Verified format & size
                       </small>
                     </div>
                   </div>
-                  <button className="btn btn-sm btn-outline-danger rounded-circle p-1" onClick={handleRemoveCustomImage}>
+                  <button className="btn btn-sm btn-outline-danger rounded-circle p-1" onClick={() => setCustomPreview("")}>
                     ✕
                   </button>
                 </div>
               )}
 
-              {/* Custom Text Input */}
               <div className="mt-3">
                 <label className="form-label small fw-bold text-dark mb-1">Custom Text</label>
                 <input
@@ -440,79 +555,26 @@ function ProductDetails() {
                   style={{ height: "44px", fontSize: "14px" }}
                 />
               </div>
-
-              {/* PREMIUM DESIGN PREVIEW CARD */}
-              {(customPreview || customImageUrls[0] || customText) && (
-                <div className="card border-0 bg-white p-3 rounded-4 mt-3 shadow-sm">
-                  <h6 className="fw-bold text-dark mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between text-sm">
-                    <span>✨ Design Preview</span>
-                    <small className="badge bg-dark text-white fw-normal">Customization</small>
-                  </h6>
-
-                  <div className="row align-items-center g-2 text-center">
-                    <div className="col-4">
-                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>
-                        Apparel
-                      </small>
-                      <img
-                        src={product.imageUrl || "https://picsum.photos/200"}
-                        alt={product.name}
-                        className="rounded-3 img-fluid border"
-                        style={{ maxHeight: "70px", objectFit: "contain" }}
-                      />
-                      <small className="fw-bold text-dark d-block text-truncate mt-1" style={{ fontSize: "11px" }}>
-                        {product.name}
-                      </small>
-                    </div>
-
-                    <div className="col-4">
-                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>
-                        Artwork
-                      </small>
-                      {customPreview || customImageUrls[0] ? (
-                        <img
-                          src={customPreview || customImageUrls[0]}
-                          alt="Uploaded artwork preview"
-                          className="rounded-3 img-fluid border shadow-sm"
-                          style={{ maxHeight: "70px", objectFit: "contain" }}
-                        />
-                      ) : (
-                        <div className="rounded-3 bg-light border p-2 text-muted small" style={{ fontSize: "11px" }}>
-                          No Image
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="col-4 text-start">
-                      <small className="text-muted d-block mb-1" style={{ fontSize: "11px" }}>
-                        Custom Text
-                      </small>
-                      <p className="fw-bold text-dark bg-light p-2 rounded-3 border mb-0 small text-truncate" style={{ fontSize: "12px" }}>
-                        {customText ? `"${customText}"` : "None"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* DESKTOP ADD TO CART / GO TO CART BUTTONS */}
+          {/* ACTION BUTTONS (DESKTOP) */}
           <div className="d-none d-md-flex gap-3 mt-4">
             <button
               className={`btn btn-lg flex-grow-1 rounded-pill py-3 fw-bold ${
                 isOut ? "btn-secondary" : "btn-dark shadow"
               }`}
               disabled={isOut}
-              onClick={handleAddToCart}
+              onClick={() => handleAddToCartAction(false)}
             >
               {isOut ? "OUT OF STOCK" : "Add To Cart"}
             </button>
             <button
-              className="btn btn-outline-dark btn-lg rounded-pill px-4"
-              onClick={() => navigate("/cart")}
+              className="btn btn-outline-dark btn-lg flex-grow-1 rounded-pill py-3 fw-bold"
+              disabled={isOut}
+              onClick={() => handleAddToCartAction(true)}
             >
-              Go to Cart
+              Buy Now ⚡
             </button>
           </div>
         </div>
@@ -520,11 +582,32 @@ function ProductDetails() {
 
       <hr className="my-5" />
 
-      {/* WRITE A REVIEW SECTION */}
+      {/* DESCRIPTION SECTION (Collapsible on mobile) */}
+      <div className="card border-0 shadow-sm p-4 rounded-4 bg-white mb-5">
+        <div className="d-flex align-items-center justify-content-between cursor-pointer" onClick={() => setDescriptionOpen(!descriptionOpen)}>
+          <h4 className="fw-bold m-0 text-dark fs-5">Product Description 📄</h4>
+          <span className="fs-5">{descriptionOpen ? "▲" : "▼"}</span>
+        </div>
+        {descriptionOpen && (
+          <div className="mt-3 pt-3 border-top">
+            <p className="text-secondary mb-0 leading-relaxed" style={{ fontSize: "15px", whiteSpace: "pre-line" }}>
+              {product.description || "Premium fashion apparel designed with super soft fabric and durable stitching for all-day comfort."}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* DELIVERY INFORMATION */}
+      <div className="card border-0 shadow-sm p-4 rounded-4 bg-white mb-5">
+        <h4 className="fw-bold text-dark fs-5 mb-3">Delivery Information 🚚</h4>
+        <DeliveryCheck />
+      </div>
+
+      {/* REVIEWS SECTION */}
       <div className="row justify-content-center mb-5">
-        <div className="col-12 col-md-8">
-          <div className="card border-0 shadow-sm p-4 rounded-4 bg-white">
-            <h5 className="fw-bold text-dark mb-3">Write a Customer Review</h5>
+        <div className="col-12 col-md-10">
+          <div className="card border-0 shadow-sm p-4 rounded-4 bg-white mb-4">
+            <h4 className="fw-bold text-dark mb-3">Customer Reviews & Ratings ⭐</h4>
 
             {!token ? (
               <div className="alert alert-warning py-2 mb-0 small">
@@ -566,14 +649,10 @@ function ProductDetails() {
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* REVIEWS LIST */}
-      <div className="row justify-content-center">
-        <div className="col-12 col-md-8">
+          {/* REVIEWS LIST */}
           <div className="d-flex align-items-center justify-content-between mb-4">
-            <h4 className="fw-bold m-0 text-dark fs-5">Customer Reviews ({reviews.length})</h4>
+            <h5 className="fw-bold m-0 text-dark">Reviews ({reviews.length})</h5>
             <select
               className="form-select form-select-sm rounded-pill w-auto border-0 shadow-sm"
               value={reviewSort}
@@ -616,22 +695,23 @@ function ProductDetails() {
       {/* MOBILE STICKY BOTTOM ACTION BAR */}
       <div className="d-flex d-md-none position-fixed bottom-0 start-0 w-100 bg-white p-3 border-top shadow-lg z-3 align-items-center justify-content-between gap-2" style={{ zIndex: 1030 }}>
         <div>
-          <span className="small text-muted d-block" style={{ fontSize: "11px" }}>Price</span>
-          <span className="fw-extrabold text-dark fs-5">₹{product.price}</span>
+          <span className="small text-muted d-block" style={{ fontSize: "11px" }}>Total Price</span>
+          <span className="fw-extrabold text-dark fs-5">₹{product.price * quantitySelected}</span>
         </div>
         <div className="d-flex gap-2">
           <button
             className={`btn btn-dark rounded-pill px-3 py-2 fw-bold text-xs ${isOut ? "btn-secondary" : ""}`}
             disabled={isOut}
-            onClick={handleAddToCart}
+            onClick={() => handleAddToCartAction(false)}
           >
             {isOut ? "OUT OF STOCK" : "Add to Cart"}
           </button>
           <button
             className="btn btn-outline-dark rounded-pill px-3 py-2 fw-bold text-xs"
-            onClick={() => navigate("/cart")}
+            disabled={isOut}
+            onClick={() => handleAddToCartAction(true)}
           >
-            Cart 🛒
+            Buy Now ⚡
           </button>
         </div>
       </div>
@@ -649,7 +729,7 @@ function ProductDetails() {
               src={enlargedImage}
               alt="Enlarged design"
               className="rounded-3 img-fluid mb-3"
-              style={{ maxHeight: "350px", objectFit: "contain" }}
+              style={{ maxHeight: "380px", objectFit: "contain" }}
             />
             <div>
               <button className="btn btn-secondary rounded-pill px-4" onClick={() => setEnlargedImage(null)}>

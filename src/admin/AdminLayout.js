@@ -7,7 +7,7 @@ function AdminLayout() {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // 🔐 Protect admin route using backend
+  // Protect admin route using backend
   useEffect(() => {
     const token = localStorage.getItem("token");
 
@@ -39,7 +39,7 @@ function AdminLayout() {
     display: "block",
     padding: "12px 16px",
     marginBottom: "8px",
-    color: location.pathname === path ? "#22c55e" : "#e5e7eb",
+    color: location.pathname === path ? "#10b981" : "#e5e7eb",
     textDecoration: "none",
     fontWeight: location.pathname === path ? "bold" : "500",
     background: location.pathname === path ? "#1f2937" : "transparent",
@@ -90,7 +90,7 @@ function AdminLayout() {
         />
       )}
 
-      {/* ADMIN SIDEBAR */}
+      {/* ADMIN SIDEBAR (Customer Directory navigation link removed) */}
       <div
         className={`bg-dark text-white p-4 d-flex flex-column justify-content-between transition-all ${
           isSidebarOpen ? "position-fixed top-0 start-0 h-100 shadow-lg" : "d-none d-md-flex"
@@ -103,7 +103,7 @@ function AdminLayout() {
       >
         <div>
           <div className="d-flex align-items-center justify-content-between mb-4">
-            <h3 className="fw-extrabold m-0 text-white fs-4">Admin Dashboard</h3>
+            <h3 className="fw-extrabold m-0 text-white fs-4">Admin Portal</h3>
             <button
               className="btn-close btn-close-white d-md-none"
               onClick={() => setIsSidebarOpen(false)}
@@ -112,22 +112,19 @@ function AdminLayout() {
 
           <nav>
             <Link to="/admin" style={linkStyle("/admin")} onClick={() => setIsSidebarOpen(false)}>
-              📊 Dashboard
+              📊 Store Operations
             </Link>
             <Link to="/admin/orders" style={linkStyle("/admin/orders")} onClick={() => setIsSidebarOpen(false)}>
-              📦 Orders
-            </Link>
-            <Link to="/admin/users" style={linkStyle("/admin/users")} onClick={() => setIsSidebarOpen(false)}>
-              👥 Users
+              📦 Orders & Customers
             </Link>
             <Link to="/admin/inventory" style={linkStyle("/admin/inventory")} onClick={() => setIsSidebarOpen(false)}>
-              🏷️ Inventory
+              🏷️ Inventory & Variants
             </Link>
             <Link to="/admin/customizations" style={linkStyle("/admin/customizations")} onClick={() => setIsSidebarOpen(false)}>
-              ✨ Customizations
+              ✨ Custom Print Orders
             </Link>
             <Link to="/admin/coupons" style={linkStyle("/admin/coupons")} onClick={() => setIsSidebarOpen(false)}>
-              🎟️ Coupons
+              🎟️ Coupons & Discounts
             </Link>
           </nav>
         </div>
