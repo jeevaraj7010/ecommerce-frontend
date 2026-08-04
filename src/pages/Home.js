@@ -109,13 +109,13 @@ function Home() {
             <h2 className="fw-bold text-dark fs-3 fs-md-2" style={{ letterSpacing: "-0.5px" }}>Shop By Category</h2>
           </div>
 
-          <div className="d-flex d-md-grid flex-nowrap overflow-auto scrollbar-hidden pb-3 gap-3 row-cols-md-3 row-cols-lg-6">
+          <div className="row g-3 g-md-4">
             {CATEGORIES.map((cat, idx) => (
-              <div className="col-8 col-sm-6 col-md-4 col-lg-2 flex-shrink-0 flex-md-shrink-1" key={idx}>
+              <div className="col-6 col-md-4 col-lg-2" key={idx}>
                 <div
                   className="card border-0 shadow-sm overflow-hidden text-center p-3 apple-card-hover h-100"
                   style={{ cursor: "pointer", borderRadius: "20px" }}
-                  onClick={() => navigate(`/products`)}
+                  onClick={() => navigate("/products")}
                 >
                   <img
                     src={cat.image}

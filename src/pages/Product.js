@@ -23,7 +23,7 @@ const CATEGORIES = [
 const ITEMS_PER_PAGE = 12;
 
 function Products() {
-  const { products: allProducts, loading } = useContext(ProductContext);
+  const { products: allProducts, loading, fetchProducts } = useContext(ProductContext);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,12 +35,24 @@ function Products() {
   const { isWishlisted, toggleWishlist } = useContext(WishlistContext);
   const role = localStorage.getItem("role");
 
-  // Read URL search params (e.g. from Navbar search)
+  // Fetch products immediately on page mount if products list is currently empty
+  useEffect(() => {
+    if (allProducts.length === 0 && !loading && fetchProducts) {
+      fetchProducts();
+    }
+  }, [allProducts.length, loading, fetchProducts]);
+
+  // Read URL search/category params (e.g. from Navbar search)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const searchParam = params.get("search");
+    const categoryParam = params.get("category");
     if (searchParam) {
       setSearchQuery(searchParam);
+      setCurrentPage(1);
+    }
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
       setCurrentPage(1);
     }
   }, [location.search]);
